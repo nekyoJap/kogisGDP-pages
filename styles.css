@@ -1,0 +1,444 @@
+/* kogisGDP - 競輪予想ボード スタイルシート */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary-color: #2563eb;
+    --primary-hover: #1d4ed8;
+    --secondary-color: #64748b;
+    --success-color: #10b981;
+    --danger-color: #ef4444;
+    --warning-color: #f59e0b;
+    --bg-color: #f8fafc;
+    --card-bg: #ffffff;
+    --text-color: #1e293b;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+body {
+    font-family: 'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: var(--text-color);
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* ヘッダー */
+header {
+    text-align: center;
+    padding: 30px 0;
+    color: white;
+}
+
+header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+header .subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+}
+
+/* メインコンテンツ */
+main {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: var(--shadow-lg);
+}
+
+section {
+    margin-bottom: 30px;
+}
+
+section h2 {
+    font-size: 1.3rem;
+    color: var(--text-color);
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+/* レース情報フォーム */
+.race-form {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.form-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-color);
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* 選手一覧 */
+.players-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 15px;
+    background: var(--bg-color);
+    border-radius: 12px;
+    min-height: 80px;
+}
+
+.player-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 15px;
+    background: white;
+    border-radius: 8px;
+    cursor: grab;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 2px solid transparent;
+    user-select: none;
+}
+
+.player-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.player-card:active {
+    cursor: grabbing;
+}
+
+.player-card.dragging {
+    opacity: 0.5;
+    transform: scale(1.05);
+}
+
+.player-number {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+    font-size: 1rem;
+}
+
+.player-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.player-info {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* 車番カラー */
+.player-card[data-number="1"] .player-number { background: #ffffff; color: #000; border: 2px solid #000; }
+.player-card[data-number="2"] .player-number { background: #000000; }
+.player-card[data-number="3"] .player-number { background: #e74c3c; }
+.player-card[data-number="4"] .player-number { background: #3498db; }
+.player-card[data-number="5"] .player-number { background: #f1c40f; color: #000; }
+.player-card[data-number="6"] .player-number { background: #27ae60; }
+.player-card[data-number="7"] .player-number { background: #e67e22; }
+.player-card[data-number="8"] .player-number { background: #e91e63; }
+.player-card[data-number="9"] .player-number { background: #9b59b6; }
+
+/* 予想ボード */
+.board-container {
+    overflow-x: auto;
+    background: var(--bg-color);
+    border-radius: 12px;
+    padding: 15px;
+}
+
+.board-header {
+    display: grid;
+    grid-template-columns: 60px repeat(5, 1fr);
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.board-header .lap {
+    text-align: center;
+    font-weight: 600;
+    padding: 10px;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.board-row {
+    display: grid;
+    grid-template-columns: 60px repeat(5, 1fr);
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.position-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.drop-zone {
+    min-height: 50px;
+    background: white;
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    padding: 5px;
+}
+
+.drop-zone:hover {
+    border-color: var(--primary-color);
+    background: rgba(37, 99, 235, 0.05);
+}
+
+.drop-zone.drag-over {
+    border-color: var(--success-color);
+    background: rgba(16, 185, 129, 0.1);
+    transform: scale(1.02);
+}
+
+.drop-zone .player-card {
+    margin: 0;
+    width: 100%;
+    justify-content: center;
+}
+
+/* 1-3位の行を強調 */
+.board-row[data-position="1"] .drop-zone,
+.board-row[data-position="2"] .drop-zone,
+.board-row[data-position="3"] .drop-zone {
+    background: rgba(37, 99, 235, 0.03);
+}
+
+.board-row[data-position="1"] .position-label { color: #fbbf24; font-size: 1rem; }
+.board-row[data-position="2"] .position-label { color: #9ca3af; font-size: 0.95rem; }
+.board-row[data-position="3"] .position-label { color: #b45309; font-size: 0.9rem; }
+
+/* アクションボタン */
+.actions {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 20px 0;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.btn-secondary {
+    background: var(--secondary-color);
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #475569;
+    transform: translateY(-2px);
+}
+
+.btn-info {
+    background: var(--success-color);
+    color: white;
+}
+
+.btn-info:hover {
+    background: #059669;
+    transform: translateY(-2px);
+}
+
+/* 結果セクション */
+.result-section {
+    background: var(--bg-color);
+    border-radius: 12px;
+    padding: 20px;
+}
+
+#predictionResult {
+    font-family: monospace;
+    white-space: pre-wrap;
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+/* コメントセクション */
+.comments-section textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 15px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.comments-section textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* フッター */
+footer {
+    text-align: center;
+    padding: 20px;
+    color: white;
+    opacity: 0.8;
+}
+
+footer a {
+    color: white;
+    text-decoration: underline;
+}
+
+/* レスポンシブ */
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .board-container {
+        padding: 10px;
+    }
+    
+    .board-header,
+    .board-row {
+        grid-template-columns: 40px repeat(5, 1fr);
+        gap: 5px;
+    }
+    
+    .board-header .lap {
+        font-size: 0.7rem;
+        padding: 8px 2px;
+    }
+    
+    .drop-zone {
+        min-height: 40px;
+    }
+    
+    .player-card {
+        padding: 5px 8px;
+        flex-direction: column;
+        gap: 2px;
+    }
+    
+    .player-number {
+        width: 24px;
+        height: 24px;
+        font-size: 0.8rem;
+    }
+    
+    .player-name {
+        font-size: 0.7rem;
+    }
+    
+    .player-info {
+        display: none;
+    }
+    
+    .actions {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* アニメーション */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.player-card {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* 通知トースト */
+.toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    background: var(--success-color);
+    color: white;
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}

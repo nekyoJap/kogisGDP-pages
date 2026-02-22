@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>出走表 × 選手評価 マージビュー | kogisGDP</title>
+    <link rel="stylesheet" href="race-merge.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>出走表 × 選手評価 マージビュー</h1>
+            <p class="subtitle">出走表データと独自評価データを統合表示</p>
+        </header>
+
+        <!-- レース情報 -->
+        <section class="race-info" id="raceInfo">
+            <div class="race-header">
+                <span class="race-grade" id="raceGrade">GP</span>
+                <span class="race-name" id="raceName">KEIRINグランプリ2025</span>
+            </div>
+            <div class="race-details">
+                <span id="raceDate">2025年12月30日</span>
+                <span id="raceVenue">平塚競輪</span>
+                <span id="raceNumber">11R</span>
+                <span id="raceTime">発走 16:30</span>
+            </div>
+            <div class="race-comment" id="lineComment"></div>
+        </section>
+
+        <!-- データ読み込みパネル -->
+        <section class="data-panel">
+            <div class="panel-item">
+                <h3>出走表データ</h3>
+                <div class="file-input-wrapper">
+                    <input type="file" id="raceDataInput" accept=".json" />
+                    <label for="raceDataInput">JSONファイルを選択</label>
+                </div>
+                <button id="loadMockRace" class="btn btn-secondary">モックデータを使用</button>
+                <span class="status" id="raceStatus"></span>
+            </div>
+            <div class="panel-item">
+                <h3>選手評価データ</h3>
+                <div class="file-input-wrapper">
+                    <input type="file" id="evalDataInput" accept=".csv" />
+                    <label for="evalDataInput">CSVファイルを選択</label>
+                </div>
+                <button id="loadMockEval" class="btn btn-secondary">モックデータを使用</button>
+                <span class="status" id="evalStatus"></span>
+            </div>
+        </section>
+
+        <!-- マージテーブル -->
+        <section class="merge-table-section">
+            <h2>出走表 + 評価データ</h2>
+            <div class="table-wrapper">
+                <table class="merge-table" id="mergeTable">
+                    <thead>
+                        <tr>
+                            <th colspan="9" class="th-group">出走表</th>
+                            <th colspan="8" class="th-group th-eval">選手評価</th>
+                        </tr>
+                        <tr>
+                            <!-- 出走表 -->
+                            <th class="th-car">予想</th>
+                            <th class="th-car">枠</th>
+                            <th class="th-car">車番</th>
+                            <th>選手名</th>
+                            <th>府県</th>
+                            <th>級班</th>
+                            <th>脚質</th>
+                            <th>得点</th>
+                            <th>勝率</th>
+                            <!-- 評価データ -->
+                            <th class="th-eval">タイプ</th>
+                            <th class="th-eval">先行意欲</th>
+                            <th class="th-eval">番手経験</th>
+                            <th class="th-eval">スピード</th>
+                            <th class="th-eval">仕掛け</th>
+                            <th class="th-eval">競輪IQ</th>
+                            <th class="th-eval">スタミナ</th>
+                            <th class="th-eval">コメント</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mergeTableBody">
+                        <!-- JSで動的生成 -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 選手詳細モーダル -->
+        <div class="modal" id="playerModal">
+            <div class="modal-content">
+                <span class="modal-close" id="modalClose">&times;</span>
+                <div class="modal-header">
+                    <span class="modal-car-number" id="modalCarNumber">1</span>
+                    <h2 id="modalPlayerName">選手名</h2>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    <!-- 詳細情報 -->
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p><a href="index.html">予想ボード</a> | <a href="bank.html">バンク版</a> | <a href="race-merge.html">マージビュー</a></p>
+            <p>kogisGDP - 競輪AI予想システム</p>
+        </footer>
+    </div>
+
+    <script src="race-merge.js"></script>
+</body>
+</html>

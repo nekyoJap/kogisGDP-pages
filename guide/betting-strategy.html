@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>車券戦略 - 競輪予想ガイド - kogisGDP</title>
+    <link rel="stylesheet" href="guide.css">
+</head>
+<body>
+    <div class="container">
+        <header class="guide-header">
+            <h1>競輪予想ガイド</h1>
+            <nav class="breadcrumb">
+                <a href="index.html">ガイドトップ</a>
+                <span class="separator">&gt;</span>
+                <span class="current">車券戦略</span>
+            </nav>
+        </header>
+
+        <main class="guide-content">
+            <div class="toc">
+                <h4>目次</h4>
+                <ul>
+                    <li><a href="#types">車券の種類</a></li>
+                    <li><a href="#odds">オッズの見方</a></li>
+                    <li><a href="#patterns">車券の買い方パターン</a></li>
+                    <li><a href="#money">資金配分の基本</a></li>
+                    <li><a href="#conversion">予想から車券への変換</a></li>
+                    <li><a href="#tips">車券のコツ</a></li>
+                </ul>
+            </div>
+
+            <!-- 車券の種類 -->
+            <section id="types" class="article-section">
+                <h2>車券の種類</h2>
+                <p>競輪には7種類の車券（投票方式）があります。</p>
+                <table class="guide-table">
+                    <thead>
+                        <tr><th>車券</th><th>内容</th><th>的中確率（9車）</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><strong>3連単</strong></td><td>1-2-3着を着順通りに当てる</td><td>1/504</td></tr>
+                        <tr><td><strong>3連複</strong></td><td>1-2-3着を順不同で当てる</td><td>1/84</td></tr>
+                        <tr><td><strong>2車単</strong></td><td>1-2着を着順通りに当てる</td><td>1/72</td></tr>
+                        <tr><td><strong>2車複</strong></td><td>1-2着を順不同で当てる</td><td>1/36</td></tr>
+                        <tr><td><strong>2枠単</strong></td><td>1-2着の枠番を着順通り</td><td>-</td></tr>
+                        <tr><td><strong>2枠複</strong></td><td>1-2着の枠番を順不同</td><td>-</td></tr>
+                        <tr><td><strong>ワイド</strong></td><td>1-3着のうち2名を当てる</td><td>3/36</td></tr>
+                    </tbody>
+                </table>
+
+                <div class="info-box tip">
+                    <div class="box-title">初心者におすすめ</div>
+                    <ol>
+                        <li><strong>ワイド</strong> - 3着以内に入る2名を当てればOK。最も的中しやすい</li>
+                        <li><strong>2車複</strong> - 1-2着を順不同で。ワイドの次にやさしい</li>
+                        <li><strong>3連複</strong> - 慣れてきたら挑戦。配当と的中率のバランスが良い</li>
+                    </ol>
+                </div>
+            </section>
+
+            <!-- オッズの見方 -->
+            <section id="odds" class="article-section">
+                <h2>オッズの見方</h2>
+
+                <h3>オッズとは</h3>
+                <p>オッズとは、車券が的中した場合に支払われる倍率です。100円投票して5.0倍なら500円の払戻しになります。</p>
+
+                <h3>人気の目安</h3>
+                <table class="guide-table">
+                    <thead>
+                        <tr><th>分類</th><th>オッズ目安</th><th>意味</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><strong>本命</strong></td><td>1〜3倍台</td><td>勝つ可能性が高いと見られている</td></tr>
+                        <tr><td><strong>対抗</strong></td><td>4〜10倍台</td><td>本命に次ぐ評価</td></tr>
+                        <tr><td><strong>穴</strong></td><td>20倍以上</td><td>人気薄だが来る可能性がある</td></tr>
+                        <tr><td><strong>大穴</strong></td><td>100倍以上</td><td>来たら高配当</td></tr>
+                    </tbody>
+                </table>
+
+                <h3>オッズの活用</h3>
+                <ul>
+                    <li><strong>オッズの偏り</strong> - 特定のラインに人気が集中 → そのラインが崩れれば高配当</li>
+                    <li><strong>意外な人気薄</strong> - 実力があるのにオッズが高い選手 → 妙味あり</li>
+                    <li><strong>過剰人気</strong> - 名前だけで買われている選手 → 過信は禁物</li>
+                </ul>
+            </section>
+
+            <!-- 車券の買い方パターン -->
+            <section id="patterns" class="article-section">
+                <h2>車券の買い方パターン</h2>
+
+                <h3>フォーメーション</h3>
+                <p>1着・2着・3着それぞれに候補を複数選び、その組み合わせを全通り買う方法です。</p>
+                <div class="formation-example">
+3連単フォーメーション
+1着: 1, 3
+2着: 1, 3, 5
+3着: 1, 3, 5, 7
+→ 全組み合わせを自動計算して購入</div>
+                <table class="guide-table">
+                    <thead>
+                        <tr><th>メリット</th><th>デメリット</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>効率的に網を張れる</td><td>点数が増えやすい</td></tr>
+                    </tbody>
+                </table>
+
+                <h3>ボックス</h3>
+                <p>選んだ選手の全組み合わせを購入する方法です。</p>
+                <div class="formation-example">
+3連単ボックス 1-3-5-7
+→ 4選手の3連単全順列 = 24通り</div>
+                <table class="guide-table">
+                    <thead>
+                        <tr><th>メリット</th><th>デメリット</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>取りこぼしが少ない</td><td>点数が多く、トリガミになりやすい</td></tr>
+                    </tbody>
+                </table>
+
+                <h3>流し</h3>
+                <p>軸となる選手を決め、相手を複数選ぶ方法です。</p>
+                <div class="formation-example">
+3連単 1着流し
+軸:  1番
+相手: 3, 5, 7
+→ 1-3-5, 1-3-7, 1-5-3, 1-5-7, 1-7-3, 1-7-5 = 6通り</div>
+                <table class="guide-table">
+                    <thead>
+                        <tr><th>メリット</th><th>デメリット</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>点数を抑えられる</td><td>軸が外れると全滅</td></tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- 資金配分 -->
+            <section id="money" class="article-section">
+                <h2>資金配分の基本</h2>
+
+                <h3>均等買い</h3>
+                <p>全ての買い目に同額を投票する方法です。管理が簡単ですが、低配当の目に多く投票してしまう可能性があります。</p>
+
+                <h3>傾斜配分（メリハリ買い）</h3>
+                <p>自信のある買い目に多く、押さえの目には少なく投票する方法です。的中時の回収を最大化できますが、判断ミスの損失も大きくなります。</p>
+
+                <h3>資金管理のルール</h3>
+                <table class="guide-table">
+                    <thead>
+                        <tr><th>ルール</th><th>内容</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>投資上限を決める</td><td>1レースの投資は全資金の5〜10%が目安</td></tr>
+                        <tr><td>追い上げはしない</td><td>負けを取り返そうと倍額投資するのは危険</td></tr>
+                        <tr><td>トリガミを避ける</td><td>総投資額より払戻が少なくならないよう買い目を絞る</td></tr>
+                        <tr><td>バランスを意識</td><td>的中率50%でも回収率100%超えなら成功</td></tr>
+                    </tbody>
+                </table>
+
+                <div class="info-box warning">
+                    <div class="box-title">トリガミとは</div>
+                    車券は当たったのに、払戻金が投資額を下回ること。例えば2,000円投資して1,500円の払戻では、当たっても500円のマイナスです。買い目の点数が多いと起きやすいので注意しましょう。
+                </div>
+            </section>
+
+            <!-- 予想から車券への変換 -->
+            <section id="conversion" class="article-section">
+                <h2>予想から車券への変換</h2>
+
+                <h3>ステップ1: 展開予想の結論を整理</h3>
+                <p>展開予想から、有力な着順パターンを2〜3通り想定します。</p>
+
+                <h3>ステップ2: 軸となる選手を決定</h3>
+                <p>最も信頼できる選手を軸にします。基準は以下の通りです。</p>
+                <ul>
+                    <li>有力ラインの先頭もしくは番手</li>
+                    <li>競走得点が高い</li>
+                    <li>直近の成績が安定している</li>
+                </ul>
+
+                <h3>ステップ3: 買い目を組み立てる</h3>
+                <p>展開パターンごとに買い目を整理します。</p>
+                <div class="formation-example">
+展開パターンA（本命）: 先行ラインが主導 → 1-3-5
+展開パターンB（対抗）: 捲りが成功     → 7-1-3
+展開パターンC（穴）  : もつれて混戦   → 5-9-1</div>
+
+                <h3>ステップ4: 点数と金額を調整</h3>
+                <ul>
+                    <li>合計点数は10〜20点に抑える（3連単の場合）</li>
+                    <li>本命パターンに厚く、穴パターンは薄く</li>
+                    <li>払戻期待値が投資額を上回るか確認</li>
+                </ul>
+            </section>
+
+            <!-- 車券のコツ -->
+            <section id="tips" class="article-section">
+                <h2>車券のコツ</h2>
+                <ol>
+                    <li><strong>全レース買わない</strong> - 自信のあるレースだけに絞る</li>
+                    <li><strong>情報を集める</strong> - 出走表、選手コメント、バンク特性、天候</li>
+                    <li><strong>感情で買わない</strong> - 好きな選手だからではなく、根拠に基づいて判断</li>
+                    <li><strong>記録をつける</strong> - 予想と結果を記録し、自分の傾向を分析</li>
+                    <li><strong>長期視点</strong> - 1日の収支ではなく、月・年単位で収支を見る</li>
+                </ol>
+
+                <div class="info-box tip">
+                    <div class="box-title">上達のために</div>
+                    予想力を上げるには「結果の振り返り」が不可欠です。予想が当たった理由、外れた理由を分析することで、次のレースに活かせます。kogisGDPの予想ボードを使って、展開予想を記録してみましょう。
+                </div>
+            </section>
+
+            <!-- ページナビゲーション -->
+            <nav class="page-nav">
+                <a href="race-development.html">
+                    <div>
+                        <span class="nav-label">&larr; 前のカテゴリ</span><br>
+                        レース展開予想
+                    </div>
+                </a>
+                <a href="index.html" class="next">
+                    <div>
+                        <span class="nav-label">ガイドトップ</span><br>
+                        カテゴリ一覧に戻る
+                    </div>
+                </a>
+            </nav>
+        </main>
+
+        <footer class="guide-footer">
+            <div class="footer-links">
+                <a href="index.html">ガイドトップ</a>
+                <a href="../index.html">予想ボード</a>
+                <a href="../bank.html">バンク版</a>
+            </div>
+            <p>kogisGDP - 競輪AI予想システム</p>
+        </footer>
+    </div>
+</body>
+</html>

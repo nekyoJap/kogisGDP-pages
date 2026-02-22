@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>kogisGDP - バンク予想ボード</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        header .subtitle {
+            opacity: 0.8;
+        }
+
+        /* コントロールパネル */
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .controls button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-play {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-play:hover {
+            background: #059669;
+        }
+
+        .btn-pause {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-reset {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-reset:hover {
+            background: #dc2626;
+        }
+
+        .btn-save {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-save:hover {
+            background: #2563eb;
+        }
+
+        /* 周回選択 */
+        .lap-selector {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .lap-btn {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 20px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .lap-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .lap-btn.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+        }
+
+        /* バンクエリア */
+        .bank-area {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            aspect-ratio: 16/10;
+            background: #2d3748;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        #bankCanvas {
+            width: 100%;
+            height: 100%;
+            cursor: default;
+        }
+
+        /* 選手パネル */
+        .players-panel {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 100;
+        }
+
+        .player-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 3px solid white;
+            cursor: grab;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            transition: transform 0.2s;
+            user-select: none;
+        }
+
+        .player-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .player-btn.on-track {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .player-btn[data-number="1"] { background: #fff; color: #000; }
+        .player-btn[data-number="2"] { background: #000; color: #fff; }
+        .player-btn[data-number="3"] { background: #e74c3c; color: #fff; }
+        .player-btn[data-number="4"] { background: #3498db; color: #fff; }
+        .player-btn[data-number="5"] { background: #f1c40f; color: #000; }
+        .player-btn[data-number="6"] { background: #27ae60; color: #fff; }
+        .player-btn[data-number="7"] { background: #e67e22; color: #fff; }
+        .player-btn[data-number="8"] { background: #e91e63; color: #fff; }
+        .player-btn[data-number="9"] { background: #9b59b6; color: #fff; }
+
+        /* 情報パネル */
+        .info-panel {
+            margin-top: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .info-panel h3 {
+            margin-bottom: 15px;
+        }
+
+        .position-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .position-item {
+            background: rgba(255,255,255,0.1);
+            padding: 10px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .position-rank {
+            font-weight: bold;
+            font-size: 1.2rem;
+            width: 30px;
+        }
+
+        .position-player {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        /* 凡例 */
+        .legend {
+            margin-top: 20px;
+            text-align: center;
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        /* レスポンシブ */
+        @media (max-width: 768px) {
+            .players-panel {
+                position: relative;
+                right: auto;
+                top: auto;
+                transform: none;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+                margin-bottom: 20px;
+            }
+
+            .player-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+
+            .bank-area {
+                aspect-ratio: 4/3;
+            }
+        }
+
+        /* モーダル */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 16px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+        }
+
+        .modal-content textarea {
+            width: 100%;
+            height: 200px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            color: white;
+            padding: 15px;
+            font-family: monospace;
+            resize: none;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: flex-end;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚴 kogisGDP バンク予想ボード</h1>
+            <p class="subtitle">選手をドラッグしてバンク上に配置</p>
+        </header>
+
+        <!-- 周回選択 -->
+        <div class="lap-selector">
+            <button class="lap-btn active" data-lap="0">残り4周</button>
+            <button class="lap-btn" data-lap="1">残り3周</button>
+            <button class="lap-btn" data-lap="2">残り2周</button>
+            <button class="lap-btn" data-lap="3">残り1周</button>
+            <button class="lap-btn" data-lap="4">ゴール</button>
+        </div>
+
+        <!-- コントロール -->
+        <div class="controls">
+            <button class="btn-play" onclick="playAnimation()">▶ 再生</button>
+            <button class="btn-pause" onclick="pauseAnimation()">⏸ 一時停止</button>
+            <button class="btn-reset" onclick="resetPositions()">🔄 リセット</button>
+            <button class="btn-save" onclick="savePositions()">💾 保存</button>
+        </div>
+
+        <!-- 選手パネル -->
+        <div class="players-panel" id="playersPanel">
+            <div class="player-btn" data-number="1" draggable="true">1</div>
+            <div class="player-btn" data-number="2" draggable="true">2</div>
+            <div class="player-btn" data-number="3" draggable="true">3</div>
+            <div class="player-btn" data-number="4" draggable="true">4</div>
+            <div class="player-btn" data-number="5" draggable="true">5</div>
+            <div class="player-btn" data-number="6" draggable="true">6</div>
+            <div class="player-btn" data-number="7" draggable="true">7</div>
+            <div class="player-btn" data-number="8" draggable="true">8</div>
+            <div class="player-btn" data-number="9" draggable="true">9</div>
+        </div>
+
+        <!-- バンクエリア -->
+        <div class="bank-area">
+            <canvas id="bankCanvas"></canvas>
+        </div>
+
+        <!-- 順位情報 -->
+        <div class="info-panel">
+            <h3>📊 現在の順位予想</h3>
+            <div class="position-list" id="positionList">
+                <!-- 動的に生成 -->
+            </div>
+        </div>
+
+        <div class="legend">
+            💡 選手をドラッグしてバンク上に配置 | 各周回で展開を予想 | 右クリックで選手を戻す
+        </div>
+
+        <p style="text-align: center; margin-top: 20px;">
+            <a href="index.html" style="color: #3b82f6;">📋 表形式の予想ボードへ</a>
+        </p>
+    </div>
+
+    <!-- 保存モーダル -->
+    <div class="modal" id="saveModal">
+        <div class="modal-content">
+            <h2>💾 予想を保存</h2>
+            <textarea id="predictionOutput" readonly></textarea>
+            <div class="modal-buttons">
+                <button onclick="copyToClipboard()" class="btn-save">📋 コピー</button>
+                <button onclick="closeModal()" class="btn-reset">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Canvas設定
+        const canvas = document.getElementById('bankCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 高解像度対応
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = rect.height + 'px';
+            draw();
+        }
+
+        // 選手データ
+        const players = {};
+        const playerColors = {
+            1: { bg: '#ffffff', text: '#000000' },
+            2: { bg: '#000000', text: '#ffffff' },
+            3: { bg: '#e74c3c', text: '#ffffff' },
+            4: { bg: '#3498db', text: '#ffffff' },
+            5: { bg: '#f1c40f', text: '#000000' },
+            6: { bg: '#27ae60', text: '#ffffff' },
+            7: { bg: '#e67e22', text: '#ffffff' },
+            8: { bg: '#e91e63', text: '#ffffff' },
+            9: { bg: '#9b59b6', text: '#ffffff' }
+        };
+
+        // 周回データ（各周回の選手位置を保存）
+        const lapPositions = {
+            0: {}, // 残り4周
+            1: {}, // 残り3周
+            2: {}, // 残り2周
+            3: {}, // 残り1周
+            4: {}  // ゴール
+        };
+
+        let currentLap = 0;
+        let draggingPlayer = null;
+        let isAnimating = false;
+
+        // バンクの寸法
+        function getBankDimensions() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radiusX = width * 0.42;
+            const radiusY = height * 0.38;
+            
+            return { width, height, centerX, centerY, radiusX, radiusY };
+        }
+
+        // バンクを描画
+        function drawBank() {
+            const { width, height, centerX, centerY, radiusX, radiusY } = getBankDimensions();
+            
+            // 背景（バンクの外側）
+            ctx.fillStyle = '#1a365d';
+            ctx.fillRect(0, 0, width, height);
+            
+            // バンク外周
+            ctx.beginPath();
+            ctx.ellipse(centerX, centerY, radiusX + 30, radiusY + 25, 0, 0, Math.PI * 2);
+            ctx.fillStyle = '#4a5568';
+            ctx.fill();
+            
+            // バンク（走路）
+            ctx.beginPath();
+            ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
+            ctx.fillStyle = '#c53030';
+            ctx.fill();
+            
+            // 内側（芝生エリア）
+            ctx.beginPath();
+            ctx.ellipse(centerX, centerY, radiusX - 50, radiusY - 40, 0, 0, Math.PI * 2);
+            ctx.fillStyle = '#276749';
+            ctx.fill();
+            
+            // コースライン
+            for (let i = 1; i <= 3; i++) {
+                ctx.beginPath();
+                ctx.ellipse(centerX, centerY, radiusX - i * 12, radiusY - i * 10, 0, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+            
+            // ゴールライン
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY - radiusY);
+            ctx.lineTo(centerX, centerY - radiusY + 50);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            
+            // ゴール表示
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('GOAL', centerX, centerY - radiusY - 10);
+            
+            // 周回表示
+            const lapNames = ['残り4周', '残り3周', '残り2周', '残り1周', 'ゴール'];
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 24px sans-serif';
+            ctx.fillText(lapNames[currentLap], centerX, centerY);
+        }
+
+        // 選手を描画
+        function drawPlayers() {
+            const positions = lapPositions[currentLap];
+            
+            Object.entries(positions).forEach(([number, pos]) => {
+                const color = playerColors[number];
+                const radius = 20;
+                
+                // 影
+                ctx.beginPath();
+                ctx.arc(pos.x + 2, pos.y + 2, radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.fill();
+                
+                // 選手円
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+                ctx.fillStyle = color.bg;
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                // 番号
+                ctx.fillStyle = color.text;
+                ctx.font = 'bold 18px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(number, pos.x, pos.y);
+            });
+        }
+
+        // 全体描画
+        function draw() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            ctx.clearRect(0, 0, rect.width, rect.height);
+            drawBank();
+            drawPlayers();
+            updatePositionList();
+        }
+
+        // 選手パネルの状態更新
+        function updatePlayerPanel() {
+            const positions = lapPositions[currentLap];
+            document.querySelectorAll('.player-btn').forEach(btn => {
+                const number = btn.dataset.number;
+                if (positions[number]) {
+                    btn.classList.add('on-track');
+                } else {
+                    btn.classList.remove('on-track');
+                }
+            });
+        }
+
+        // 順位リスト更新
+        function updatePositionList() {
+            const positions = lapPositions[currentLap];
+            const list = document.getElementById('positionList');
+            
+            // 位置から順位を計算（ゴールに近い順）
+            const { centerX, centerY, radiusX, radiusY } = getBankDimensions();
+            
+            const sorted = Object.entries(positions)
+                .map(([number, pos]) => {
+                    // ゴール地点からの角度で順位を決定
+                    const angle = Math.atan2(pos.y - centerY, pos.x - centerX);
+                    // ゴールは上部なので、-π/2からの距離
+                    let progress = angle + Math.PI / 2;
+                    if (progress < 0) progress += Math.PI * 2;
+                    return { number, progress, pos };
+                })
+                .sort((a, b) => a.progress - b.progress);
+            
+            list.innerHTML = sorted.map((item, index) => {
+                const color = playerColors[item.number];
+                return `
+                    <div class="position-item">
+                        <span class="position-rank">${index + 1}位</span>
+                        <span class="position-player" style="background:${color.bg};color:${color.text}">${item.number}</span>
+                    </div>
+                `;
+            }).join('');
+            
+            updatePlayerPanel();
+        }
+
+        // 周回切り替え
+        document.querySelectorAll('.lap-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelector('.lap-btn.active').classList.remove('active');
+                btn.classList.add('active');
+                currentLap = parseInt(btn.dataset.lap);
+                draw();
+            });
+        });
+
+        // ドラッグ&ドロップ
+        let isDragging = false;
+        let dragStartPos = null;
+
+        document.querySelectorAll('.player-btn').forEach(btn => {
+            btn.addEventListener('mousedown', (e) => {
+                if (btn.classList.contains('on-track')) return;
+                draggingPlayer = btn.dataset.number;
+                isDragging = true;
+            });
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDragging || !draggingPlayer) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // 一時的に位置を設定
+            lapPositions[currentLap][draggingPlayer] = { x, y };
+            draw();
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            if (isDragging && draggingPlayer) {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // バンク上かチェック
+                if (isOnTrack(x, y)) {
+                    lapPositions[currentLap][draggingPlayer] = { x, y };
+                } else {
+                    delete lapPositions[currentLap][draggingPlayer];
+                }
+                
+                draw();
+            }
+            
+            isDragging = false;
+            draggingPlayer = null;
+        });
+
+        // Canvas上のドラッグ（既存選手の移動）
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // クリック位置に選手がいるかチェック
+            const positions = lapPositions[currentLap];
+            for (const [number, pos] of Object.entries(positions)) {
+                const dist = Math.sqrt((x - pos.x) ** 2 + (y - pos.y) ** 2);
+                if (dist < 25) {
+                    draggingPlayer = number;
+                    isDragging = true;
+                    break;
+                }
+            }
+        });
+
+        // 右クリックで選手を戻す
+        canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const positions = lapPositions[currentLap];
+            for (const [number, pos] of Object.entries(positions)) {
+                const dist = Math.sqrt((x - pos.x) ** 2 + (y - pos.y) ** 2);
+                if (dist < 25) {
+                    delete positions[number];
+                    draw();
+                    break;
+                }
+            }
+        });
+
+        // トラック上かチェック
+        function isOnTrack(x, y) {
+            const { centerX, centerY, radiusX, radiusY } = getBankDimensions();
+            
+            // 楕円の方程式でチェック
+            const outer = ((x - centerX) / (radiusX + 20)) ** 2 + ((y - centerY) / (radiusY + 15)) ** 2;
+            const inner = ((x - centerX) / (radiusX - 45)) ** 2 + ((y - centerY) / (radiusY - 35)) ** 2;
+            
+            return outer <= 1 && inner >= 1;
+        }
+
+        // リセット
+        function resetPositions() {
+            lapPositions[currentLap] = {};
+            draw();
+        }
+
+        // 保存
+        function savePositions() {
+            const lapNames = ['残り4周', '残り3周', '残り2周', '残り1周', 'ゴール'];
+            let output = '=== kogisGDP 競輪展開予想 ===\n\n';
+            
+            for (let lap = 0; lap < 5; lap++) {
+                const positions = lapPositions[lap];
+                if (Object.keys(positions).length === 0) continue;
+                
+                output += `【${lapNames[lap]}】\n`;
+                
+                const { centerX, centerY } = getBankDimensions();
+                const sorted = Object.entries(positions)
+                    .map(([number, pos]) => {
+                        const angle = Math.atan2(pos.y - centerY, pos.x - centerX);
+                        let progress = angle + Math.PI / 2;
+                        if (progress < 0) progress += Math.PI * 2;
+                        return { number, progress };
+                    })
+                    .sort((a, b) => a.progress - b.progress);
+                
+                sorted.forEach((item, index) => {
+                    output += `${index + 1}位: ${item.number}番\n`;
+                });
+                output += '\n';
+            }
+            
+            document.getElementById('predictionOutput').value = output;
+            document.getElementById('saveModal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('saveModal').classList.remove('show');
+        }
+
+        function copyToClipboard() {
+            const textarea = document.getElementById('predictionOutput');
+            textarea.select();
+            document.execCommand('copy');
+            alert('コピーしました！');
+        }
+
+        // アニメーション再生
+        function playAnimation() {
+            if (isAnimating) return;
+            isAnimating = true;
+            
+            let lap = 0;
+            const interval = setInterval(() => {
+                if (lap >= 5 || !isAnimating) {
+                    clearInterval(interval);
+                    isAnimating = false;
+                    return;
+                }
+                
+                document.querySelector('.lap-btn.active').classList.remove('active');
+                document.querySelector(`.lap-btn[data-lap="${lap}"]`).classList.add('active');
+                currentLap = lap;
+                draw();
+                lap++;
+            }, 1500);
+        }
+
+        function pauseAnimation() {
+            isAnimating = false;
+        }
+
+        // タッチ対応
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            
+            const positions = lapPositions[currentLap];
+            for (const [number, pos] of Object.entries(positions)) {
+                const dist = Math.sqrt((x - pos.x) ** 2 + (y - pos.y) ** 2);
+                if (dist < 30) {
+                    draggingPlayer = number;
+                    isDragging = true;
+                    break;
+                }
+            }
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (!isDragging || !draggingPlayer) return;
+            e.preventDefault();
+            
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            
+            lapPositions[currentLap][draggingPlayer] = { x, y };
+            draw();
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            if (isDragging && draggingPlayer) {
+                const positions = lapPositions[currentLap];
+                const pos = positions[draggingPlayer];
+                
+                if (pos && !isOnTrack(pos.x, pos.y)) {
+                    delete positions[draggingPlayer];
+                }
+                
+                draw();
+            }
+            
+            isDragging = false;
+            draggingPlayer = null;
+        });
+
+        // 選手パネルからのタッチドラッグ
+        let touchDragPlayer = null;
+
+        document.querySelectorAll('.player-btn').forEach(btn => {
+            btn.addEventListener('touchstart', (e) => {
+                if (btn.classList.contains('on-track')) return;
+                e.preventDefault();
+                touchDragPlayer = btn.dataset.number;
+            });
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!touchDragPlayer) return;
+            
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            
+            if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
+                touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+                
+                const x = touch.clientX - rect.left;
+                const y = touch.clientY - rect.top;
+                
+                lapPositions[currentLap][touchDragPlayer] = { x, y };
+                draw();
+            }
+        });
+
+        document.addEventListener('touchend', (e) => {
+            if (touchDragPlayer) {
+                const positions = lapPositions[currentLap];
+                const pos = positions[touchDragPlayer];
+                
+                if (pos && !isOnTrack(pos.x, pos.y)) {
+                    delete positions[touchDragPlayer];
+                }
+                
+                draw();
+            }
+            touchDragPlayer = null;
+        });
+
+        // 初期化
+        window.addEventListener('load', resizeCanvas);
+        window.addEventListener('resize', resizeCanvas);
+    </script>
+</body>
+</html>

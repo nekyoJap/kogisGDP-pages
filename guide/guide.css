@@ -1,0 +1,442 @@
+/* kogisGDP - 競輪予想ガイド 共通スタイルシート */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary-color: #2563eb;
+    --primary-hover: #1d4ed8;
+    --primary-light: #dbeafe;
+    --secondary-color: #64748b;
+    --success-color: #10b981;
+    --danger-color: #ef4444;
+    --warning-color: #f59e0b;
+    --bg-color: #f8fafc;
+    --card-bg: #ffffff;
+    --text-color: #1e293b;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --radius: 12px;
+}
+
+body {
+    font-family: 'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: var(--text-color);
+    line-height: 1.7;
+}
+
+/* コンテナ */
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* ヘッダー */
+.guide-header {
+    text-align: center;
+    padding: 30px 0 20px;
+    color: white;
+}
+
+.guide-header h1 {
+    font-size: 2.2rem;
+    margin-bottom: 8px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.guide-header .subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+/* パンくずリスト */
+.breadcrumb {
+    padding: 12px 0;
+    font-size: 0.9rem;
+}
+
+.breadcrumb a {
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    color: white;
+    text-decoration: underline;
+}
+
+.breadcrumb .separator {
+    color: rgba(255, 255, 255, 0.5);
+    margin: 0 8px;
+}
+
+.breadcrumb .current {
+    color: white;
+    font-weight: 600;
+}
+
+/* メインコンテンツ */
+.guide-content {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 40px;
+    box-shadow: var(--shadow-lg);
+}
+
+/* カテゴリグリッド（トップページ用） */
+.category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    margin-top: 10px;
+}
+
+.category-card {
+    background: var(--bg-color);
+    border-radius: var(--radius);
+    padding: 28px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 2px solid transparent;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+.category-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-color);
+}
+
+.category-card .card-icon {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.category-card h3 {
+    font-size: 1.2rem;
+    margin-bottom: 8px;
+    color: var(--text-color);
+}
+
+.category-card p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+.category-card .card-tag {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.tag-beginner {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.tag-intermediate {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.tag-advanced {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* 記事スタイル */
+.article-section {
+    margin-bottom: 40px;
+}
+
+.article-section h2 {
+    font-size: 1.5rem;
+    color: var(--text-color);
+    padding-bottom: 10px;
+    border-bottom: 3px solid var(--primary-color);
+    margin-bottom: 20px;
+}
+
+.article-section h3 {
+    font-size: 1.15rem;
+    color: var(--text-color);
+    margin: 24px 0 12px;
+    padding-left: 12px;
+    border-left: 4px solid var(--primary-color);
+}
+
+.article-section h4 {
+    font-size: 1rem;
+    color: var(--secondary-color);
+    margin: 16px 0 8px;
+}
+
+.article-section p {
+    margin-bottom: 12px;
+}
+
+/* テーブル */
+.guide-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0 24px;
+    font-size: 0.9rem;
+}
+
+.guide-table th {
+    background: var(--primary-color);
+    color: white;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.guide-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.guide-table tbody tr:hover {
+    background: var(--bg-color);
+}
+
+.guide-table tbody tr:nth-child(even) {
+    background: #fafbfc;
+}
+
+.guide-table tbody tr:nth-child(even):hover {
+    background: var(--bg-color);
+}
+
+/* 車番カラーバッジ */
+.car-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-weight: bold;
+    font-size: 0.85rem;
+    color: white;
+}
+
+.car-1 { background: #fff; color: #000; border: 2px solid #333; }
+.car-2 { background: #000; }
+.car-3 { background: #e74c3c; }
+.car-4 { background: #3498db; }
+.car-5 { background: #f1c40f; color: #000; }
+.car-6 { background: #27ae60; }
+.car-7 { background: #e67e22; }
+.car-8 { background: #e91e63; }
+.car-9 { background: #9b59b6; }
+
+/* インフォボックス */
+.info-box {
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin: 16px 0;
+    font-size: 0.92rem;
+}
+
+.info-box.tip {
+    background: #ecfdf5;
+    border-left: 4px solid var(--success-color);
+}
+
+.info-box.warning {
+    background: #fffbeb;
+    border-left: 4px solid var(--warning-color);
+}
+
+.info-box.important {
+    background: #eff6ff;
+    border-left: 4px solid var(--primary-color);
+}
+
+.info-box .box-title {
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+/* リスト */
+.article-section ul,
+.article-section ol {
+    margin: 8px 0 16px 20px;
+}
+
+.article-section li {
+    margin-bottom: 6px;
+}
+
+/* コードブロック風 */
+.formation-example {
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 16px 20px;
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    margin: 12px 0;
+    overflow-x: auto;
+    line-height: 1.8;
+}
+
+/* ページナビゲーション */
+.page-nav {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+    gap: 16px;
+}
+
+.page-nav a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: var(--bg-color);
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--text-color);
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: background 0.2s, transform 0.2s;
+    max-width: 48%;
+}
+
+.page-nav a:hover {
+    background: var(--primary-light);
+    transform: translateY(-2px);
+}
+
+.page-nav .nav-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.page-nav .next {
+    margin-left: auto;
+    text-align: right;
+}
+
+/* サイドバーTOC（目次） */
+.toc {
+    background: var(--bg-color);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 30px;
+}
+
+.toc h4 {
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+    color: var(--text-muted);
+}
+
+.toc ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.toc li {
+    margin-bottom: 6px;
+}
+
+.toc a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 0.88rem;
+}
+
+.toc a:hover {
+    text-decoration: underline;
+}
+
+.toc .toc-sub {
+    padding-left: 16px;
+}
+
+/* フッター */
+.guide-footer {
+    text-align: center;
+    padding: 24px 0;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.85rem;
+}
+
+.guide-footer a {
+    color: white;
+    text-decoration: none;
+}
+
+.guide-footer a:hover {
+    text-decoration: underline;
+}
+
+.guide-footer .footer-links {
+    margin-bottom: 8px;
+}
+
+.guide-footer .footer-links a {
+    margin: 0 12px;
+}
+
+/* レスポンシブ */
+@media (max-width: 768px) {
+    .container {
+        padding: 12px;
+    }
+
+    .guide-header h1 {
+        font-size: 1.6rem;
+    }
+
+    .guide-content {
+        padding: 20px 16px;
+    }
+
+    .category-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .article-section h2 {
+        font-size: 1.25rem;
+    }
+
+    .guide-table {
+        font-size: 0.82rem;
+    }
+
+    .guide-table th,
+    .guide-table td {
+        padding: 8px 10px;
+    }
+
+    .page-nav {
+        flex-direction: column;
+    }
+
+    .page-nav a {
+        max-width: 100%;
+    }
+}
