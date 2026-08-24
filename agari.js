@@ -127,6 +127,28 @@ function rankRacers(racers) {
     return valid;
 }
 
+/** 表示と同じ丸め（小数第1位）。0.3 と表示されるものは 0.3 として扱う */
+function roundDiff(v) {
+    return Math.round(v * 10) / 10;
+}
+
+/**
+ * そのレースの1位が2位をどれだけ離しているか。
+ * 2位がいない（全員同タイム / 有効なタイムが1人）場合は null。
+ */
+function leadOfRace(ranked) {
+    if (ranked.length === 0) return null;
+    const d = ranked[0].diff;
+    return d === null || d === undefined ? null : roundDiff(d);
+}
+
+/** 1位のリードがしきい値以上か。しきい値0は絞り込みなし */
+function meetsLead(ranked, minLead) {
+    if (minLead <= 0) return ranked.length > 0;
+    const lead = leadOfRace(ranked);
+    return lead !== null && lead >= minLead;
+}
+
 /** 上位N人（同順位は全員含む） */
 function pickTop(ranked, topN) {
     return ranked.filter((x) => x.rank <= topN);
@@ -338,7 +360,7 @@ function layoutTimelines(root) {
 
 // ===== セクション描画 =====
 
-function renderPickup(data, topN) {
+function renderPickup(data, topN, minLead) {
     const container = document.getElementById('pickupContainer');
     const parts = [];
 
@@ -364,6 +386,7 @@ function renderPickup(data, topN) {
         for (const race of sortedRaces(meet)) {
             const ranked = rankRacers(race.racers || []);
             if (ranked.length === 0) continue;
+            if (!meetsLead(ranked, minLead)) continue;
             const picked = pickTop(ranked, topN);
 
             const rows = picked
@@ -402,7 +425,9 @@ function renderPickup(data, topN) {
         parts.push(`<div class="meet">
             ${head}
             <div class="meet-body">
-                <div class="pickup-grid">${cards.join('')}</div>
+                ${cards.length
+                    ? `<div class="pickup-grid">${cards.join('')}</div>`
+                    : `<div class="no-data"><strong>該当レースなし</strong>1位が2位を <span class="time">${minLead.toFixed(1)}</span> 秒以上離したレースはありません。</div>`}
             </div>
         </div>`);
     }
@@ -528,11 +553,37 @@ function clearOutput() {
 
 // ===== メイン =====
 
+function currentMinLead() {
+    return Number(document.getElementById('minLeadSelect').value);
+}
+
 function render() {
     if (!currentData) return;
     const topN = Number(document.getElementById('topNSelect').value);
-    renderPickup(currentData, topN);
+    const minLead = currentMinLead();
+    renderPickup(currentData, topN, minLead);
     renderAllRaces(currentData, topN);
+    updatePickupSummary(minLead);
+}
+
+/** ピックアップ見出しの横に、絞り込み結果の件数を出す */
+function updatePickupSummary(minLead) {
+    const el = document.getElementById('pickupSummary');
+    if (!el || !currentData) return;
+    let total = 0;
+    let hit = 0;
+    for (const meet of currentData) {
+        if (!meetHasData(meet)) continue;
+        for (const race of meet.races || []) {
+            const ranked = rankRacers(race.racers || []);
+            if (ranked.length === 0) continue;
+            total++;
+            if (meetsLead(ranked, minLead)) hit++;
+        }
+    }
+    el.textContent = minLead > 0
+        ? `${total} レース中 ${hit} レースが該当（1位のリード ${minLead.toFixed(1)} 秒以上）`
+        : `${total} レース（絞り込みなし）`;
 }
 
 async function load(requestedISO) {
@@ -579,6 +630,7 @@ function init() {
         if (dateInput.value) load(dateInput.value);
     });
     topNSelect.addEventListener('change', render);
+    document.getElementById('minLeadSelect').addEventListener('change', render);
     document.getElementById('reloadBtn').addEventListener('click', () => {
         dayCache.clear();
         load(dateInput.value);

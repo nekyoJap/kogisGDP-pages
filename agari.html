@@ -35,6 +35,16 @@
                         </select>
                     </div>
                     <div class="control-group">
+                        <label for="minLeadSelect">1位のリード</label>
+                        <select id="minLeadSelect">
+                            <option value="0">絞り込みなし</option>
+                            <option value="0.2">0.2秒以上</option>
+                            <option value="0.3" selected>0.3秒以上</option>
+                            <option value="0.4">0.4秒以上</option>
+                            <option value="0.5">0.5秒以上</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
                         <label for="reloadBtn">&nbsp;</label>
                         <button type="button" class="btn btn-primary" id="reloadBtn">再読み込み</button>
                     </div>
@@ -45,6 +55,7 @@
             <!-- ピックアップ -->
             <section class="pickup-section">
                 <h2>🎯 上りピックアップ</h2>
+                <p class="section-note" id="pickupSummary"></p>
                 <div id="pickupContainer"></div>
             </section>
 
@@ -59,6 +70,8 @@
                 <div class="legend">
                     <strong>前走</strong>＝その開催の前日に走ったレース。上りタイムと着順は<strong>どちらも同じ1走の結果</strong>です。<br>
                     上りとはゴール前 200m のタイム（秒）で、<strong>小さいほど速い</strong>。<br>
+                    ピックアップは<strong>1位が2位を離した差</strong>で絞り込みます。差が小さいレースは
+                    「抜けている」とは言えないため既定で 0.3 秒以上のみ表示します。<br>
                     タイム数直線は各レースの上りタイムを横軸に並べたもの。左が速く、右が遅い。<br>
                     着順の 落＝落車、故＝故障。この2つは上りタイムの記録なし扱い。<br>
                     初日（1日目）の開催は前走が存在しないため対象外。

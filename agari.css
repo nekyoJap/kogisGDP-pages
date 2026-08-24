@@ -92,6 +92,12 @@ section > h2 {
     border-bottom: 2px solid var(--primary-color);
 }
 
+.section-note {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin: -8px 0 14px;
+}
+
 /* ===== コントロール ===== */
 .controls {
     display: flex;
