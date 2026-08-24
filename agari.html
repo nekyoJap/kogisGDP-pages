@@ -45,6 +45,14 @@
                         </select>
                     </div>
                     <div class="control-group">
+                        <label for="maxTieSelect">1位の同着</label>
+                        <select id="maxTieSelect">
+                            <option value="1">単独1位のみ</option>
+                            <option value="2" selected>2人まで</option>
+                            <option value="0">制限なし</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
                         <label for="reloadBtn">&nbsp;</label>
                         <button type="button" class="btn btn-primary" id="reloadBtn">再読み込み</button>
                     </div>
@@ -72,6 +80,7 @@
                     上りとはゴール前 200m のタイム（秒）で、<strong>小さいほど速い</strong>。<br>
                     ピックアップは<strong>1位が2位を離した差</strong>で絞り込みます。差が小さいレースは
                     「抜けている」とは言えないため既定で 0.3 秒以上のみ表示します。<br>
+                    1位が同着の場合は単独で抜けた選手がいないため、既定で同着3人以上のレースを除外します。<br>
                     タイム数直線は各レースの上りタイムを横軸に並べたもの。左が速く、右が遅い。<br>
                     着順の 落＝落車、故＝故障。この2つは上りタイムの記録なし扱い。<br>
                     初日（1日目）の開催は前走が存在しないため対象外。

@@ -149,6 +149,21 @@ function meetsLead(ranked, minLead) {
     return lead !== null && lead >= minLead;
 }
 
+/** 1位に並んでいる人数（同着なら2以上） */
+function tieCountAtTop(ranked) {
+    return ranked.filter((x) => x.rank === 1).length;
+}
+
+/**
+ * 1位の同着人数が許容範囲か。
+ * 同着が多いほど「抜けている」とは言えなくなるため、既定では3人以上を除く。
+ * maxTie が 0 以下なら制限なし。
+ */
+function meetsTie(ranked, maxTie) {
+    if (maxTie <= 0) return true;
+    return tieCountAtTop(ranked) <= maxTie;
+}
+
 /** 上位N人（同順位は全員含む） */
 function pickTop(ranked, topN) {
     return ranked.filter((x) => x.rank <= topN);
@@ -360,7 +375,7 @@ function layoutTimelines(root) {
 
 // ===== セクション描画 =====
 
-function renderPickup(data, topN, minLead) {
+function renderPickup(data, topN, minLead, maxTie) {
     const container = document.getElementById('pickupContainer');
     const parts = [];
 
@@ -387,6 +402,7 @@ function renderPickup(data, topN, minLead) {
             const ranked = rankRacers(race.racers || []);
             if (ranked.length === 0) continue;
             if (!meetsLead(ranked, minLead)) continue;
+            if (!meetsTie(ranked, maxTie)) continue;
             const picked = pickTop(ranked, topN);
 
             const rows = picked
@@ -412,11 +428,13 @@ function renderPickup(data, topN, minLead) {
                 })
                 .join('');
 
+            const tied = tieCountAtTop(ranked);
             cards.push(`<div class="pickup-card">
                 <div class="pickup-card-head">
                     <span class="pickup-race-num">${escapeHtml(race.race_num)}R</span>
                     <span class="pickup-place">${escapeHtml(meet.place)}</span>
                     <span class="pickup-race-name">${escapeHtml(race.race_name || '')}</span>
+                    ${tied > 1 ? `<span class="tie-note" title="1位が同着のため単独で抜けた選手はいません">同着${tied}人</span>` : ''}
                 </div>
                 ${rows}
             </div>`);
@@ -427,7 +445,7 @@ function renderPickup(data, topN, minLead) {
             <div class="meet-body">
                 ${cards.length
                     ? `<div class="pickup-grid">${cards.join('')}</div>`
-                    : `<div class="no-data"><strong>該当レースなし</strong>1位が2位を <span class="time">${minLead.toFixed(1)}</span> 秒以上離したレースはありません。</div>`}
+                    : `<div class="no-data"><strong>該当レースなし</strong>条件（1位のリード <span class="time">${minLead.toFixed(1)}</span> 秒以上${maxTie > 0 ? `／1位の同着 ${maxTie} 人まで` : ''}）に合うレースはありません。</div>`}
             </div>
         </div>`);
     }
@@ -557,17 +575,22 @@ function currentMinLead() {
     return Number(document.getElementById('minLeadSelect').value);
 }
 
+function currentMaxTie() {
+    return Number(document.getElementById('maxTieSelect').value);
+}
+
 function render() {
     if (!currentData) return;
     const topN = Number(document.getElementById('topNSelect').value);
     const minLead = currentMinLead();
-    renderPickup(currentData, topN, minLead);
+    const maxTie = currentMaxTie();
+    renderPickup(currentData, topN, minLead, maxTie);
     renderAllRaces(currentData, topN);
-    updatePickupSummary(minLead);
+    updatePickupSummary(minLead, maxTie);
 }
 
 /** ピックアップ見出しの横に、絞り込み結果の件数を出す */
-function updatePickupSummary(minLead) {
+function updatePickupSummary(minLead, maxTie) {
     const el = document.getElementById('pickupSummary');
     if (!el || !currentData) return;
     let total = 0;
@@ -578,11 +601,14 @@ function updatePickupSummary(minLead) {
             const ranked = rankRacers(race.racers || []);
             if (ranked.length === 0) continue;
             total++;
-            if (meetsLead(ranked, minLead)) hit++;
+            if (meetsLead(ranked, minLead) && meetsTie(ranked, maxTie)) hit++;
         }
     }
-    el.textContent = minLead > 0
-        ? `${total} レース中 ${hit} レースが該当（1位のリード ${minLead.toFixed(1)} 秒以上）`
+    const conds = [];
+    if (minLead > 0) conds.push(`1位のリード ${minLead.toFixed(1)} 秒以上`);
+    if (maxTie > 0) conds.push(maxTie === 1 ? '単独1位のみ' : `1位の同着 ${maxTie} 人まで`);
+    el.textContent = conds.length
+        ? `${total} レース中 ${hit} レースが該当（${conds.join('／')}）`
         : `${total} レース（絞り込みなし）`;
 }
 
@@ -631,6 +657,7 @@ function init() {
     });
     topNSelect.addEventListener('change', render);
     document.getElementById('minLeadSelect').addEventListener('change', render);
+    document.getElementById('maxTieSelect').addEventListener('change', render);
     document.getElementById('reloadBtn').addEventListener('click', () => {
         dayCache.clear();
         load(dateInput.value);
