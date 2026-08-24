@@ -1,0 +1,766 @@
+/**
+ * 上り抜け - 前日上りタイム抽出ビュー
+ * kogisGDP - 競輪AI予想システム
+ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    /* index.html / styles.css と共通のパレット */
+    --primary-color: #2563eb;
+    --primary-hover: #1d4ed8;
+    --secondary-color: #64748b;
+    --success-color: #10b981;
+    --danger-color: #ef4444;
+    --warning-color: #f59e0b;
+    --bg-color: #f8fafc;
+    --card-bg: #ffffff;
+    --text-color: #1e293b;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+    /* 競輪 正式枠色（車番カラー） */
+    --car-1: #ffffff;
+    --car-2: #1a1a1a;
+    --car-3: #e74c3c;
+    --car-4: #3498db;
+    --car-5: #f1c40f;
+    --car-6: #27ae60;
+    --car-7: #e67e22;
+    --car-8: #e91e63;
+    --car-9: #9b59b6;
+
+    /* 等幅（タイム表示用） */
+    --font-mono: 'SFMono-Regular', Consolas, 'Roboto Mono', 'DejaVu Sans Mono', Menlo, monospace;
+}
+
+body {
+    font-family: 'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    color: var(--text-color);
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* ヘッダー */
+header {
+    text-align: center;
+    padding: 30px 0;
+    color: white;
+}
+
+header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+header .subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+}
+
+/* メインコンテンツ */
+main {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: var(--shadow-lg);
+}
+
+section {
+    margin-bottom: 30px;
+}
+
+section > h2 {
+    font-size: 1.3rem;
+    color: var(--text-color);
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+/* ===== コントロール ===== */
+.controls {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    background: var(--bg-color);
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.control-group label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-color);
+}
+
+.control-group input[type="date"],
+.control-group select {
+    padding: 10px 14px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: inherit;
+    background: white;
+    color: var(--text-color);
+    min-height: 44px;
+}
+
+.control-group input[type="date"]:focus,
+.control-group select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.date-nav {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.btn {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-height: 44px;
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.btn-secondary {
+    background: white;
+    color: var(--text-color);
+    border: 2px solid var(--border-color);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ステータス表示 */
+.status-bar {
+    margin-top: 15px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    background: #eff6ff;
+    border-left: 4px solid var(--primary-color);
+    color: var(--text-color);
+}
+
+.status-bar.error {
+    background: #fef2f2;
+    border-left-color: var(--danger-color);
+}
+
+.status-bar.warning {
+    background: #fffbeb;
+    border-left-color: var(--warning-color);
+}
+
+.status-bar.hidden {
+    display: none;
+}
+
+/* ===== 車番バッジ（競輪 正式枠色） ===== */
+.car-badge {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.95rem;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.car-badge.car-1 { background: var(--car-1); color: #000; border: 2px solid #333; }
+.car-badge.car-2 { background: var(--car-2); color: #fff; }
+.car-badge.car-3 { background: var(--car-3); color: #fff; }
+.car-badge.car-4 { background: var(--car-4); color: #fff; }
+.car-badge.car-5 { background: var(--car-5); color: #000; }
+.car-badge.car-6 { background: var(--car-6); color: #fff; }
+.car-badge.car-7 { background: var(--car-7); color: #fff; }
+.car-badge.car-8 { background: var(--car-8); color: #fff; }
+.car-badge.car-9 { background: var(--car-9); color: #fff; }
+
+/* ===== タイム表示（等幅 + tabular-nums） ===== */
+.time {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    letter-spacing: 0;
+}
+
+/* ===== 開催 ===== */
+.meet {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.meet-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 14px 18px;
+    background: var(--bg-color);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.meet-place {
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.meet-grade {
+    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    color: #fff;
+    font-weight: bold;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+.meet-day {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    background: white;
+    border: 1px solid var(--border-color);
+    padding: 3px 10px;
+    border-radius: 999px;
+}
+
+.meet-body {
+    padding: 18px;
+}
+
+/* データなし（初日など） */
+.no-data {
+    padding: 24px;
+    text-align: center;
+    color: var(--text-muted);
+    background: var(--bg-color);
+    border-radius: 8px;
+    font-size: 0.95rem;
+}
+
+.no-data strong {
+    display: block;
+    color: var(--text-color);
+    margin-bottom: 6px;
+    font-size: 1rem;
+}
+
+/* ===== ピックアップ ===== */
+.pickup-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 14px;
+}
+
+.pickup-card {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 14px;
+    background: var(--card-bg);
+    box-shadow: var(--shadow);
+}
+
+.pickup-card-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.pickup-race-num {
+    font-weight: 700;
+    color: var(--primary-color);
+    font-size: 1.05rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.pickup-place {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.pickup-race-name {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.pickup-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 6px;
+    border-radius: 8px;
+}
+
+.pickup-row + .pickup-row {
+    border-top: 1px solid var(--border-color);
+}
+
+.pickup-row.rank-1 {
+    background: rgba(251, 191, 36, 0.12);
+}
+
+.rank-mark {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    min-width: 26px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.pickup-row.rank-1 .rank-mark {
+    color: #b45309;
+}
+
+.pickup-name {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.pickup-name .nm {
+    font-weight: 600;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pickup-name .meta {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+.pickup-time {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: flex-end;
+}
+
+.pickup-time .t {
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.diff-chip {
+    font-size: 0.7rem;
+    padding: 1px 7px;
+    border-radius: 999px;
+    white-space: nowrap;
+    background: var(--bg-color);
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+}
+
+.diff-chip.lead {
+    background: rgba(16, 185, 129, 0.12);
+    color: #047857;
+    border-color: rgba(16, 185, 129, 0.35);
+}
+
+.diff-chip.behind {
+    background: rgba(100, 116, 139, 0.1);
+    color: var(--secondary-color);
+}
+
+/* ===== タイム数直線 ===== */
+.timeline-block {
+    margin: 16px 0 4px;
+    background: var(--bg-color);
+    border-radius: 10px;
+    padding: 14px 12px 10px;
+}
+
+.timeline-caption {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.timeline {
+    position: relative;
+    width: 100%;
+}
+
+/* 目盛りの帯（速い→遅い） */
+.timeline-track {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 14px;
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--success-color) 0%, #cbd5e1 55%, #94a3b8 100%);
+    opacity: 0.55;
+}
+
+.timeline-end {
+    position: absolute;
+    top: 0;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.timeline-end.left { left: 0; }
+.timeline-end.right { right: 0; }
+
+.tl-marker {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* left / top は JS が設定 */
+}
+
+.tl-stem {
+    width: 2px;
+    background: var(--border-color);
+    flex: none;
+}
+
+.tl-marker.is-pickup .tl-stem {
+    background: var(--success-color);
+    width: 3px;
+}
+
+.tl-badge-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.tl-marker .car-badge {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    font-size: 0.82rem;
+}
+
+.tl-marker.is-pickup .car-badge {
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.45);
+}
+
+.tl-marker.is-dimmed {
+    opacity: 0.55;
+}
+
+.tl-time {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.tl-marker.is-pickup .tl-time {
+    color: #047857;
+    font-weight: 700;
+}
+
+/* ===== 全レーステーブル ===== */
+.race-block {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 16px;
+}
+
+.race-block-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.race-block-head .rn {
+    font-weight: 700;
+    color: var(--primary-color);
+    font-size: 1.05rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.race-block-head .nm {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.race-block-head .lines {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+.table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.racer-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+}
+
+.racer-table th,
+.racer-table td {
+    padding: 8px 10px;
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.racer-table thead th {
+    background: var(--bg-color);
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    position: sticky;
+    top: 0;
+}
+
+.racer-table td.td-name {
+    text-align: left;
+    font-weight: 600;
+}
+
+.racer-table td.td-car {
+    width: 44px;
+}
+
+.racer-table tbody tr.is-pickup {
+    background: rgba(16, 185, 129, 0.08);
+}
+
+.racer-table tbody tr.is-pickup td.td-agari {
+    font-weight: 700;
+    color: #047857;
+}
+
+.racer-table td.td-agari {
+    font-size: 0.95rem;
+}
+
+.racer-table td.is-empty {
+    color: #cbd5e1;
+}
+
+/* 折りたたみ */
+.races-toggle {
+    margin-top: 6px;
+}
+
+details.races > summary {
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 10px 12px;
+    background: var(--bg-color);
+    border-radius: 8px;
+    list-style: none;
+    user-select: none;
+}
+
+details.races > summary::-webkit-details-marker { display: none; }
+
+details.races > summary::before {
+    content: "▶ ";
+    color: var(--primary-color);
+    font-size: 0.8rem;
+}
+
+details.races[open] > summary::before {
+    content: "▼ ";
+}
+
+details.races > summary:hover {
+    color: var(--primary-color);
+}
+
+.races-body {
+    padding-top: 14px;
+}
+
+/* 凡例 */
+.legend {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    background: var(--bg-color);
+    border-radius: 8px;
+    padding: 12px 14px;
+    line-height: 1.7;
+}
+
+/* フッター */
+footer {
+    text-align: center;
+    padding: 20px;
+    color: white;
+    opacity: 0.9;
+}
+
+footer a {
+    color: white;
+    text-decoration: underline;
+}
+
+footer p {
+    margin-bottom: 8px;
+}
+
+/* ===== レスポンシブ ===== */
+@media (max-width: 768px) {
+    .container {
+        padding: 12px;
+    }
+
+    header {
+        padding: 20px 0;
+    }
+
+    header h1 {
+        font-size: 1.6rem;
+    }
+
+    header .subtitle {
+        font-size: 0.95rem;
+    }
+
+    main {
+        padding: 16px;
+        border-radius: 12px;
+    }
+
+    section {
+        margin-bottom: 22px;
+    }
+
+    section > h2 {
+        font-size: 1.1rem;
+    }
+
+    .controls {
+        padding: 14px;
+        gap: 14px;
+    }
+
+    .control-group {
+        flex: 1 1 100%;
+    }
+
+    .control-group input[type="date"],
+    .control-group select {
+        width: 100%;
+    }
+
+    .date-nav {
+        width: 100%;
+    }
+
+    .date-nav input[type="date"] {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .pickup-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .meet-body {
+        padding: 12px;
+    }
+
+    .race-block {
+        padding: 10px;
+    }
+
+    .racer-table {
+        font-size: 0.8rem;
+    }
+
+    .racer-table th,
+    .racer-table td {
+        padding: 6px 6px;
+    }
+
+    .timeline-block {
+        padding: 12px 8px 8px;
+    }
+
+    .tl-marker .car-badge {
+        width: 24px;
+        height: 24px;
+        min-width: 24px;
+        font-size: 0.75rem;
+    }
+
+    .tl-time {
+        font-size: 0.65rem;
+    }
+}
