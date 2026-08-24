@@ -371,7 +371,14 @@ section > h2 {
     color: #b45309;
 }
 
-.pickup-row .chaku {
+.pickup-time .t-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+.pickup-time .chaku {
     flex: none;
 }
 
