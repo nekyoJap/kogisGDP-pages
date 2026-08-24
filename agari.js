@@ -216,6 +216,23 @@ function diffChip(item) {
     return `<span class="diff-chip behind" title="1位との差">1位と <span class="time">+${fmtDiff(item.diff)}</span></span>`;
 }
 
+/**
+ * 前日の着順バッジ。
+ * 数値以外に 落（落車）/ 故（故障）が入るため、そのまま「◯着」と繋げない。
+ */
+const CHAKU_LABELS = { '落': '落車', '故': '故障' };
+
+function chakuBadge(raw) {
+    const s = String(raw === null || raw === undefined ? '' : raw).trim();
+    if (!s) return '<span class="chaku chaku-none" title="前日の着順">—</span>';
+    if (/^\d+$/.test(s)) {
+        const n = Number(s);
+        const cls = n <= 3 ? `chaku-${n}` : 'chaku-other';
+        return `<span class="chaku ${cls}" title="前日の着順">${escapeHtml(s)}着</span>`;
+    }
+    return `<span class="chaku chaku-x" title="前日の着順">${escapeHtml(CHAKU_LABELS[s] || s)}</span>`;
+}
+
 const RANK_MARKS = { 1: '1st', 2: '2nd', 3: '3rd' };
 
 function rankMark(rank) {
@@ -358,8 +375,9 @@ function renderPickup(data, topN) {
                             <span class="nm">${escapeHtml(r['選手名'])}</span>
                             <span class="meta">${escapeHtml(r['級班'] || '')} ${escapeHtml(r['脚質'] || '')}${
                                 r['競走得点'] ? ' ' + escapeHtml(r['競走得点']) : ''
-                            }${r['前日着'] ? ' / 前日' + escapeHtml(r['前日着']) + '着' : ''}</span>
+                            }</span>
                         </span>
+                        ${chakuBadge(r['前日着'])}
                         <span class="pickup-time">
                             <span class="t time">${fmtTime(item.t)}</span>
                             ${diffChip(item)}
@@ -423,7 +441,7 @@ function renderAllRaces(data, topN) {
                         <td>${escapeHtml(r['級班'] || '')}</td>
                         <td>${escapeHtml(r['脚質'] || '')}</td>
                         <td class="time">${escapeHtml(r['競走得点'] ?? '')}</td>
-                        <td>${r['前日着'] ? escapeHtml(r['前日着']) : '<span class="is-empty">—</span>'}</td>
+                        <td>${chakuBadge(r['前日着'])}</td>
                         <td class="td-agari">${agari}</td>
                         <td>${item ? item.rank : '<span class="is-empty">—</span>'}</td>
                     </tr>`;
