@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>上り抜け - 前走上りタイム抽出 | kogisGDP</title>
+    <title>上り抜け - 前日上りタイム抽出 | kogisGDP</title>
     <link rel="stylesheet" href="agari.css">
 </head>
 <body>
     <div class="container">
         <header>
             <h1>⏱️ 上り抜け</h1>
-            <p class="subtitle">前走の上りタイムが速かった選手をレースごとに抽出</p>
+            <p class="subtitle">前日の上りタイムが速かった選手をレースごとに抽出</p>
         </header>
 
         <main>
@@ -65,7 +65,7 @@
                 <h2>🎯 上りピックアップ</h2>
                 <p class="section-note" id="pickupSummary"></p>
                 <p class="section-caution">
-                    上りタイムと着順は<strong>選手ごとに別のレース</strong>（各自の前走）の結果です。
+                    上りタイムと着順は<strong>選手ごとに別のレース</strong>（各自が前日に走ったレース）の結果です。
                     同じカード内で着順が揃うことがありますが、別レースなので偶然です。
                 </p>
                 <div id="pickupContainer"></div>
@@ -80,15 +80,15 @@
             <!-- 凡例 -->
             <section class="legend-section">
                 <div class="legend">
-                    <strong>前走</strong>＝各選手が前日に走ったレース。上りタイムと着順は<strong>どちらも同じ1走の結果</strong>です。<br>
-                    ただし<strong>前走は選手ごとに別のレース</strong>です。同じレースに出る選手でも、前日は別々のレースを走っています。<br>
+                    <strong>前日上り</strong>と<strong>前日着</strong>は、その選手が前日に走ったレースの結果です。<strong>どちらも同じ1走</strong>のもの。<br>
+                    ただし<strong>前日のレースは選手ごとに別</strong>です。同じレースに出る選手でも、前日は別々のレースを走っています。<br>
                     上りとはゴール前 200m のタイム（秒）で、<strong>小さいほど速い</strong>。<br>
                     ピックアップは<strong>1位が2位を離した差</strong>で絞り込みます。差が小さいレースは
                     「抜けている」とは言えないため既定で 0.3 秒以上のみ表示します。<br>
                     1位が同着の場合は単独で抜けた選手がいないため、既定で同着3人以上のレースを除外します。<br>
                     タイム数直線は各レースの上りタイムを横軸に並べたもの。左が速く、右が遅い。<br>
                     着順の 落＝落車、故＝故障。この2つは上りタイムの記録なし扱い。<br>
-                    初日（1日目）の開催は前走が存在しないため対象外。
+                    初日（1日目）の開催は前日の成績が存在しないため対象外。
                 </div>
             </section>
         </main>

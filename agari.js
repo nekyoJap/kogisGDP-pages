@@ -1,9 +1,9 @@
 /**
- * 上り抜け - 前走の上りタイム抽出ビュー
+ * 上り抜け - 前日の上りタイム抽出ビュー
  * kogisGDP - 競輪AI予想システム
  *
  * データ元: https://storage.googleapis.com/asilogkeirin/race_info/race_info_YYYYMMDD.json
- * データのキー「前日上り」＝前走（その開催の前日のレース）のゴール前200mのタイム・秒。
+ * データのキー「前日上り」＝その選手が前日に走ったレースのゴール前200mのタイム・秒。
  * これを昇順に並べ、レースごとの上位N人を抽出する。同じ走りの着順が「前日着」。
  */
 
@@ -169,7 +169,7 @@ function pickTop(ranked, topN) {
     return ranked.filter((x) => x.rank <= topN);
 }
 
-/** その開催に前走の上りデータがあるか */
+/** その開催に前日の上りデータがあるか */
 function meetHasData(meet) {
     if (Number(meet.race_day) === 1) return false;
     return (meet.races || []).some((race) =>
@@ -260,15 +260,17 @@ function diffChip(item) {
  */
 const CHAKU_LABELS = { '落': '落車', '故': '故障' };
 
-function chakuBadge(raw) {
+function chakuBadge(raw, withLabel) {
     const s = String(raw === null || raw === undefined ? '' : raw).trim();
-    if (!s) return '<span class="chaku chaku-none" title="この上りタイムを出した走りの着順">—</span>';
+    const t = 'この上りタイムを出した走り（前日）の着順';
+    const lb = withLabel ? '<span class="chaku-label">前日着</span>' : '';
+    if (!s) return `<span class="chaku chaku-none" title="${t}">${lb}—</span>`;
     if (/^\d+$/.test(s)) {
         const n = Number(s);
         const cls = n <= 3 ? `chaku-${n}` : 'chaku-other';
-        return `<span class="chaku ${cls}" title="この上りタイムを出した走りの着順">${escapeHtml(s)}着</span>`;
+        return `<span class="chaku ${cls}" title="${t}">${lb}${escapeHtml(s)}着</span>`;
     }
-    return `<span class="chaku chaku-x" title="この上りタイムを出した走りの着順">${escapeHtml(CHAKU_LABELS[s] || s)}</span>`;
+    return `<span class="chaku chaku-x" title="${t}">${lb}${escapeHtml(CHAKU_LABELS[s] || s)}</span>`;
 }
 
 const RANK_MARKS = { 1: '1st', 2: '2nd', 3: '3rd' };
@@ -387,10 +389,10 @@ function renderPickup(data, topN, minLead, maxTie) {
                 ${head}
                 <div class="meet-body">
                     <div class="no-data">
-                        <strong>前走の上りデータなし</strong>
+                        <strong>前日の上りデータなし</strong>
                         ${Number(meet.race_day) === 1
-                            ? '初日（1日目）のため前走がありません。'
-                            : '前走の上りが記録されている選手がいません。'}
+                            ? '初日（1日目）のため前日の成績がありません。'
+                            : '前日の上りが記録されている選手がいません。'}
                     </div>
                 </div>
             </div>`);
@@ -420,7 +422,7 @@ function renderPickup(data, topN, minLead, maxTie) {
                         <span class="pickup-time">
                             <span class="t-row">
                                 <span class="t time">${fmtTime(item.t)}</span>
-                                ${chakuBadge(r['前日着'])}
+                                ${chakuBadge(r['前日着'], true)}
                             </span>
                             ${diffChip(item)}
                         </span>
@@ -470,7 +472,7 @@ function renderAllRaces(data, topN) {
 
             const body = ranked.length > 0
                 ? renderTimeline(ranked, pickedSet)
-                : `<div class="no-data">このレースには前走の上り記録がありません。</div>`;
+                : `<div class="no-data">このレースには前日の上り記録がありません。</div>`;
 
             const rows = racers
                 .slice()
@@ -513,8 +515,8 @@ function renderAllRaces(data, topN) {
                                         <th>級班</th>
                                         <th>脚質</th>
                                         <th>得点</th>
-                                        <th>前走上り</th>
-                                        <th>前走着</th>
+                                        <th>前日上り</th>
+                                        <th>前日着</th>
                                         <th>順位</th>
                                     </tr>
                                 </thead>
@@ -529,10 +531,10 @@ function renderAllRaces(data, topN) {
         parts.push(`<div class="meet">
             ${meetHeader(meet)}
             <div class="meet-body">
-                ${hasData ? '' : `<div class="no-data"><strong>前走の上りデータなし</strong>${
+                ${hasData ? '' : `<div class="no-data"><strong>前日の上りデータなし</strong>${
                     Number(meet.race_day) === 1
-                        ? '初日（1日目）のため前走がありません。出走表のみ表示します。'
-                        : '前走の上りが記録されている選手がいません。'
+                        ? '初日（1日目）のため前日の成績がありません。出走表のみ表示します。'
+                        : '前日の上りが記録されている選手がいません。'
                 }</div>`}
                 ${blocks.join('')}
             </div>
@@ -627,7 +629,7 @@ async function load(requestedISO) {
         dateInput.value = iso;
 
         const withData = data.filter(meetHasData).length;
-        let msg = `<strong>${formatJP(iso)}</strong> の開催 ${data.length} 場（前走上りあり ${withData} 場）`;
+        let msg = `<strong>${formatJP(iso)}</strong> の開催 ${data.length} 場（前日上りあり ${withData} 場）`;
         if (backtracked > 0) {
             msg =
                 `${formatJP(requestedISO)} にデータがないため、${backtracked} 日さかのぼって ` + msg;
