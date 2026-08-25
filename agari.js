@@ -319,14 +319,20 @@ function carBadge(num) {
     return `<span class="car-badge ${cls}">${escapeHtml(num)}</span>`;
 }
 
+/**
+ * 行に出す差。1位は基準そのものなので出さない。
+ * 1位のリードは同じ数字が2位の行にも出るため、カード見出しに1回だけ置く。
+ */
 function diffChip(item) {
-    if (item.diffType === 'lead') {
-        if (item.diff === null || item.diff === undefined) {
-            return `<span class="diff-chip">比較なし</span>`;
-        }
-        return `<span class="diff-chip lead" title="2位との差">2位と <span class="time">${fmtDiff(item.diff)}</span></span>`;
-    }
+    if (item.diffType === 'lead') return '';
     return `<span class="diff-chip behind" title="1位との差">1位と <span class="time">+${fmtDiff(item.diff)}</span></span>`;
+}
+
+/** カード見出しに出す「1位が2位を離した差」 */
+function leadChip(ranked) {
+    const lead = leadOfRace(ranked);
+    if (lead === null) return '';
+    return `<span class="lead-chip" title="1位が2位を離した差">リード <span class="time">${lead.toFixed(1)}</span></span>`;
 }
 
 /**
@@ -511,6 +517,7 @@ function renderPickup(data, topN, minLead, maxTie) {
                     <span class="pickup-race-num">${escapeHtml(race.race_num)}R</span>
                     <span class="pickup-place">${escapeHtml(meet.place)}</span>
                     <span class="pickup-race-name">${escapeHtml(race.race_name || '')}</span>
+                    ${leadChip(ranked)}
                     ${tied > 1 ? `<span class="tie-note" title="1位が同着のため単独で抜けた選手はいません">同着${tied}人</span>` : ''}
                 </div>
                 ${rows}
