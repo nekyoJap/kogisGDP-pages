@@ -64,6 +64,10 @@
             <section class="pickup-section">
                 <h2>🎯 上りピックアップ</h2>
                 <p class="section-note" id="pickupSummary"></p>
+                <p class="section-caution">
+                    上りタイムと着順は<strong>選手ごとに別のレース</strong>（各自の前走）の結果です。
+                    同じカード内で着順が揃うことがありますが、別レースなので偶然です。
+                </p>
                 <div id="pickupContainer"></div>
             </section>
 
@@ -76,7 +80,8 @@
             <!-- 凡例 -->
             <section class="legend-section">
                 <div class="legend">
-                    <strong>前走</strong>＝その開催の前日に走ったレース。上りタイムと着順は<strong>どちらも同じ1走の結果</strong>です。<br>
+                    <strong>前走</strong>＝各選手が前日に走ったレース。上りタイムと着順は<strong>どちらも同じ1走の結果</strong>です。<br>
+                    ただし<strong>前走は選手ごとに別のレース</strong>です。同じレースに出る選手でも、前日は別々のレースを走っています。<br>
                     上りとはゴール前 200m のタイム（秒）で、<strong>小さいほど速い</strong>。<br>
                     ピックアップは<strong>1位が2位を離した差</strong>で絞り込みます。差が小さいレースは
                     「抜けている」とは言えないため既定で 0.3 秒以上のみ表示します。<br>

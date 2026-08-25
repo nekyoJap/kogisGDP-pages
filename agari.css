@@ -98,6 +98,17 @@ section > h2 {
     margin: -8px 0 14px;
 }
 
+.section-caution {
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--text-color);
+    background: #fffbeb;
+    border-left: 4px solid var(--warning-color);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: -4px 0 16px;
+}
+
 /* ===== コントロール ===== */
 .controls {
     display: flex;
