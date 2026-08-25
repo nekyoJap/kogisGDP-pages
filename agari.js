@@ -319,15 +319,6 @@ function carBadge(num) {
     return `<span class="car-badge ${cls}">${escapeHtml(num)}</span>`;
 }
 
-/**
- * 行に出す差。1位は基準そのものなので出さない。
- * 1位のリードは同じ数字が2位の行にも出るため、カード見出しに1回だけ置く。
- */
-function diffChip(item) {
-    if (item.diffType === 'lead') return '';
-    return `<span class="diff-chip behind" title="1位との差">1位と <span class="time">+${fmtDiff(item.diff)}</span></span>`;
-}
-
 /** カード見出しに出す「1位が2位を離した差」 */
 function leadChip(ranked) {
     const lead = leadOfRace(ranked);
@@ -505,7 +496,6 @@ function renderPickup(data, topN, minLead, maxTie) {
                                 <span class="t time">${fmtTime(item.t)}</span>
                                 ${chakuBadge(r['前日着'], true)}
                             </span>
-                            ${diffChip(item)}
                         </span>
                     </div>`;
                 })
