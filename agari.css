@@ -466,6 +466,65 @@ section > h2 {
     color: var(--secondary-color);
 }
 
+/* ===== タブ ===== */
+.tabs {
+    display: flex;
+    gap: 6px;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--card-bg);
+    padding: 10px 0;
+    margin-bottom: 18px;
+    border-bottom: 2px solid var(--border-color);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.tab {
+    flex: 1 1 auto;
+    white-space: nowrap;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 8px;
+    background: var(--bg-color);
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    min-height: 44px;
+}
+
+.tab:hover {
+    color: var(--primary-color);
+}
+
+.tab.is-active {
+    background: var(--primary-color);
+    color: #fff;
+}
+
+.tab-count {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.25);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.tab:not(.is-active) .tab-count {
+    background: var(--border-color);
+    color: var(--text-muted);
+}
+
+.tab-panel[hidden] {
+    display: none;
+}
+
 /* ===== 前日の着順バッジ ===== */
 .chaku {
     font-size: 0.72rem;
@@ -716,6 +775,49 @@ section > h2 {
     color: #cbd5e1;
 }
 
+/* 全レース: 開催ごとの折りたたみ */
+details.meet-fold > summary {
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    display: block;
+    position: relative;
+}
+
+details.meet-fold > summary::-webkit-details-marker { display: none; }
+
+details.meet-fold > summary .meet-header {
+    padding-right: 92px;
+}
+
+details.meet-fold > summary::after {
+    content: "▶";
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--primary-color);
+    font-size: 0.75rem;
+}
+
+details.meet-fold[open] > summary::after {
+    content: "▼";
+}
+
+.fold-hint {
+    position: absolute;
+    right: 36px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+details.meet-fold > summary:hover .meet-place {
+    color: var(--primary-color);
+}
+
 /* 折りたたみ */
 .races-toggle {
     margin-top: 6px;
@@ -835,6 +937,23 @@ footer p {
 
     .pickup-grid {
         grid-template-columns: 1fr;
+    }
+
+    .tabs {
+        gap: 4px;
+        padding: 8px 0;
+        margin-bottom: 14px;
+    }
+
+    .tab {
+        font-size: 0.75rem;
+        padding: 9px 8px;
+    }
+
+    .tab-count {
+        margin-left: 4px;
+        padding: 1px 5px;
+        font-size: 0.7rem;
     }
 
     .meet-body {

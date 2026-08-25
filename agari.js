@@ -603,8 +603,11 @@ function renderAllRaces(data, topN) {
             </div>`);
         }
 
+        // 開催が複数あるときは畳んでおく。1開催だけなら開いた状態で出す
+        const openAttr = data.length <= 1 ? ' open' : '';
         parts.push(`<div class="meet">
-            ${meetHeader(meet)}
+            <details class="meet-fold"${openAttr}>
+            <summary>${meetHeader(meet)}<span class="fold-hint">${(meet.races || []).length}レース</span></summary>
             <div class="meet-body">
                 ${hasData ? '' : `<div class="no-data"><strong>前日の上りデータなし</strong>${
                     Number(meet.race_day) === 1
@@ -613,6 +616,7 @@ function renderAllRaces(data, topN) {
                 }</div>`}
                 ${blocks.join('')}
             </div>
+            </details>
         </div>`);
     }
 
@@ -713,6 +717,50 @@ function clearOutput() {
 
 // ===== メイン =====
 
+/** 開催フィルタを適用した表示対象 */
+function filteredData() {
+    if (!currentData) return [];
+    const sel = document.getElementById('meetSelect').value;
+    if (!sel) return currentData;
+    const hit = currentData.filter((m) => m.place === sel);
+    return hit.length ? hit : currentData;
+}
+
+/** 開催セレクタの中身を今のデータで作り直す。選択中の開催が残っていれば維持する */
+function rebuildMeetOptions() {
+    const sel = document.getElementById('meetSelect');
+    const keep = sel.value;
+    const places = currentData ? currentData.map((m) => m.place) : [];
+    sel.innerHTML = '<option value="">すべての開催</option>' +
+        places.map((p) => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+    sel.value = places.includes(keep) ? keep : '';
+}
+
+/** タブ切り替え。数直線は表示中でないと幅が0になるので、開いた時に組み直す */
+function switchTab(name) {
+    document.querySelectorAll('#tabs .tab').forEach((b) => {
+        b.classList.toggle('is-active', b.dataset.tab === name);
+    });
+    document.querySelectorAll('.tab-panel').forEach((p) => {
+        p.hidden = p.dataset.panel !== name;
+    });
+    if (name === 'races') {
+        layoutTimelines(document.getElementById('racesContainer'));
+    }
+}
+
+function activeTab() {
+    const b = document.querySelector('#tabs .tab.is-active');
+    return b ? b.dataset.tab : 'pickup';
+}
+
+function updateTabCounts() {
+    const n = (sel) => document.querySelectorAll(sel).length;
+    document.getElementById('countPickup').textContent = n('#pickupContainer .pickup-card');
+    document.getElementById('countLeg').textContent = n('#legContainer .leg-card');
+    document.getElementById('countRaces').textContent = n('#racesContainer .race-block');
+}
+
 function currentMinLead() {
     return Number(document.getElementById('minLeadSelect').value);
 }
@@ -726,20 +774,26 @@ function render() {
     const topN = Number(document.getElementById('topNSelect').value);
     const minLead = currentMinLead();
     const maxTie = currentMaxTie();
+    const view = filteredData();
     const ranks = buildPrevRaceRanks(currentData, prevDayData);
-    renderPickup(currentData, topN, minLead, maxTie);
-    renderLegLeftover(currentData, ranks);
-    renderAllRaces(currentData, topN);
-    updatePickupSummary(minLead, maxTie);
+    renderPickup(view, topN, minLead, maxTie);
+    renderLegLeftover(view, ranks);
+    renderAllRaces(view, topN);
+    updatePickupSummary(view, minLead, maxTie);
+    updateTabCounts();
+    // 非表示のまま描画された数直線は幅0で組まれるため、表示中のタブだけ組み直す
+    if (activeTab() === 'races') {
+        layoutTimelines(document.getElementById('racesContainer'));
+    }
 }
 
 /** ピックアップ見出しの横に、絞り込み結果の件数を出す */
-function updatePickupSummary(minLead, maxTie) {
+function updatePickupSummary(data, minLead, maxTie) {
     const el = document.getElementById('pickupSummary');
-    if (!el || !currentData) return;
+    if (!el || !data) return;
     let total = 0;
     let hit = 0;
-    for (const meet of currentData) {
+    for (const meet of data) {
         if (!meetHasData(meet)) continue;
         for (const race of meet.races || []) {
             const ranked = rankRacers(race.racers || []);
@@ -777,6 +831,7 @@ async function load(requestedISO) {
             prevDayData = null;
         }
         if (seq !== loadSeq) return;
+        rebuildMeetOptions();
         dateInput.value = iso;
 
         const withData = data.filter(meetHasData).length;
@@ -811,6 +866,11 @@ function init() {
     topNSelect.addEventListener('change', render);
     document.getElementById('minLeadSelect').addEventListener('change', render);
     document.getElementById('maxTieSelect').addEventListener('change', render);
+    document.getElementById('meetSelect').addEventListener('change', render);
+    document.getElementById('tabs').addEventListener('click', (e) => {
+        const b = e.target.closest('.tab');
+        if (b) switchTab(b.dataset.tab);
+    });
     document.getElementById('reloadBtn').addEventListener('click', () => {
         dayCache.clear();
         load(dateInput.value);

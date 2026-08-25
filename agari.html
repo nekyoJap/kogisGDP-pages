@@ -53,6 +53,12 @@
                         </select>
                     </div>
                     <div class="control-group">
+                        <label for="meetSelect">開催</label>
+                        <select id="meetSelect">
+                            <option value="">すべての開催</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
                         <label for="reloadBtn">&nbsp;</label>
                         <button type="button" class="btn btn-primary" id="reloadBtn">再読み込み</button>
                     </div>
@@ -60,9 +66,21 @@
                 <div class="status-bar hidden" id="statusBar"></div>
             </section>
 
+            <!-- タブ -->
+            <nav class="tabs" id="tabs" role="tablist">
+                <button type="button" class="tab is-active" data-tab="pickup" role="tab">
+                    🎯 上りピックアップ<span class="tab-count" id="countPickup"></span>
+                </button>
+                <button type="button" class="tab" data-tab="leg" role="tab">
+                    🦵 脚余し<span class="tab-count" id="countLeg"></span>
+                </button>
+                <button type="button" class="tab" data-tab="races" role="tab">
+                    📋 全レース<span class="tab-count" id="countRaces"></span>
+                </button>
+            </nav>
+
             <!-- ピックアップ -->
-            <section class="pickup-section">
-                <h2>🎯 上りピックアップ</h2>
+            <section class="pickup-section tab-panel" data-panel="pickup">
                 <p class="section-note" id="pickupSummary"></p>
                 <p class="section-caution">
                     上りタイムと着順は<strong>選手ごとに別のレース</strong>（各自が前日に走ったレース）の結果です。
@@ -72,8 +90,7 @@
             </section>
 
             <!-- 脚余し -->
-            <section class="leg-section">
-                <h2>🦵 脚余し</h2>
+            <section class="leg-section tab-panel" data-panel="leg" hidden>
                 <p class="section-note" id="legNote"></p>
                 <p class="section-caution">
                     前日のレースで<strong>上りが一番速かったのに着順は振るわなかった</strong>選手です。
@@ -84,8 +101,7 @@
             </section>
 
             <!-- 全レース -->
-            <section class="all-races-section">
-                <h2>📋 全レース</h2>
+            <section class="all-races-section tab-panel" data-panel="races" hidden>
                 <div id="racesContainer"></div>
             </section>
 
