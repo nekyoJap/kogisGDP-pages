@@ -1,5 +1,5 @@
 /**
- * 上り抜け - 前日の上りタイム抽出ビュー
+ * 上りレーダー - 前日の上りタイム抽出ビュー
  * kogisGDP - 競輪AI予想システム
  *
  * データ元: https://storage.googleapis.com/asilogkeirin/race_info/race_info_YYYYMMDD.json

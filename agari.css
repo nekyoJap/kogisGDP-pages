@@ -1,5 +1,5 @@
 /**
- * 上り抜け - 前日上りタイム抽出ビュー
+ * 上りレーダー - 前日上りタイム抽出ビュー
  * kogisGDP - 競輪AI予想システム
  */
 
@@ -54,22 +54,43 @@ body {
     padding: 20px;
 }
 
-/* ヘッダー */
-header {
+/* ===== ヘッダー / ロゴ ===== */
+.site-header {
     text-align: center;
-    padding: 30px 0;
-    color: white;
+    padding: 36px 0 30px;
+    color: #fff;
 }
 
-header h1 {
-    font-size: 2.5rem;
-    margin-bottom: 10px;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+.logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
 }
 
-header .subtitle {
-    font-size: 1.2rem;
-    opacity: 0.9;
+.logo-mark {
+    width: 52px;
+    height: 52px;
+    flex: none;
+    color: #fff;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+}
+
+.logo-type {
+    font-size: 2.6rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    line-height: 1.1;
+    margin: 0;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+}
+
+.site-header .subtitle {
+    margin-top: 12px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    opacity: 0.82;
 }
 
 /* メインコンテンツ */
@@ -887,16 +908,28 @@ footer p {
         padding: 12px;
     }
 
-    header {
-        padding: 20px 0;
+    .site-header {
+        padding: 22px 0 18px;
     }
 
-    header h1 {
-        font-size: 1.6rem;
+    .logo {
+        gap: 10px;
     }
 
-    header .subtitle {
-        font-size: 0.95rem;
+    .logo-mark {
+        width: 34px;
+        height: 34px;
+    }
+
+    .logo-type {
+        font-size: 1.7rem;
+        letter-spacing: 0.04em;
+    }
+
+    .site-header .subtitle {
+        margin-top: 8px;
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
     }
 
     main {
