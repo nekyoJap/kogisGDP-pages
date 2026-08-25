@@ -21,6 +21,9 @@ let currentData = null;
 /** 前日のデータ。各選手が前日に走ったレースの顔ぶれを知るために使う */
 let prevDayData = null;
 
+/** racerKey -> 前日レース。選手名クリック時の内訳表示にも使う */
+let prevRaceIndex = new Map();
+
 /** 読み込みの世代番号。日付を続けて切り替えたとき、古い応答で上書きしないための番号 */
 let loadSeq = 0;
 
@@ -183,62 +186,91 @@ function racerKey(r) {
 }
 
 /**
- * 前日レース内での上り順位を求める。
+ * 前日レースの索引を作る。
  *
- * バケットは「今日の出走表＋各選手の前日上り」しか持たないので、前日レースの
- * 顔ぶれは前日ファイルの出走表から取り、その全員の上りタイムを今日のファイルの
- * 「前日上り」から引いて復元する。前日に同じレースを走った選手は基本的に今日も
- * 同じ開催に出走しているため、この方法で揃う。
+ * バケットは「今日の出走表＋各選手の前日上り／前日着」しか持たないので、前日
+ * レースの顔ぶれは前日ファイルの出走表から取り、その全員の上りタイムと着順を
+ * 今日のファイルから引いて復元する。前日に同じレースを走った選手は基本的に
+ * 今日も同じ開催に出走しているため、この方法で揃う。
  *
- * 戻り値: Map<racerKey, {rank, size, best, t}>
+ * 戻り値: Map<racerKey, race>
+ *   race = { place, grade, raceDay, num, name, size, best, rows[] }
+ *   rows[i] = { key, car, name, pref, chaku, agari, rank }
  */
-function buildPrevRaceRanks(todayData, prevData) {
-    const ranks = new Map();
-    if (!prevData) return ranks;
+function buildPrevRaceIndex(todayData, prevData) {
+    const index = new Map();
+    if (!prevData) return index;
 
-    // 今日のファイルから「各選手の前日上り」を集める
-    const agari = new Map();
+    // 今日のファイルから「各選手の前日の結果」を集める
+    const result = new Map();
     for (const meet of todayData) {
         for (const race of meet.races || []) {
             for (const r of race.racers || []) {
-                const t = parseAgari(r['前日上り']);
-                if (t !== null) agari.set(racerKey(r), t);
-            }
-        }
-    }
-
-    // 前日ファイルのレース単位で、メンバーのタイムを引いて順位づけ
-    for (const meet of prevData) {
-        for (const race of meet.races || []) {
-            const members = (race.racers || []).map(racerKey);
-            const times = members
-                .map((k) => agari.get(k))
-                .filter((t) => t !== undefined);
-            // 復元できた人数が少なすぎると順位の意味がないので除く
-            if (times.length < 4) continue;
-            const sorted = times.slice().sort((a, b) => a - b);
-            const best = sorted[0];
-            for (const k of members) {
-                const t = agari.get(k);
-                if (t === undefined) continue;
-                ranks.set(k, {
-                    rank: sorted.indexOf(t) + 1,
-                    size: sorted.length,
-                    best,
-                    t,
+                result.set(racerKey(r), {
+                    agari: parseAgari(r['前日上り']),
+                    chaku: String(r['前日着'] ?? '').trim(),
                 });
             }
         }
     }
-    return ranks;
+
+    for (const meet of prevData) {
+        for (const race of meet.races || []) {
+            const rows = (race.racers || []).map((r) => {
+                const k = racerKey(r);
+                const v = result.get(k) || {};
+                return {
+                    key: k,
+                    car: r['車番'],
+                    name: r['選手名'],
+                    pref: r['府県'] || '',
+                    chaku: v.chaku || '',
+                    agari: v.agari === undefined ? null : v.agari,
+                    rank: null,
+                };
+            });
+            const times = rows.map((x) => x.agari).filter((t) => t !== null);
+            // 復元できた人数が少なすぎると順位の意味がないので扱わない
+            if (times.length < 4) continue;
+            const sorted = times.slice().sort((a, b) => a - b);
+            rows.forEach((x) => {
+                if (x.agari !== null) x.rank = sorted.indexOf(x.agari) + 1;
+            });
+            const raceObj = {
+                place: meet.place,
+                grade: meet.grade || '',
+                raceDay: meet.race_day,
+                num: race.race_num,
+                name: race.race_name || '',
+                size: sorted.length,
+                best: sorted[0],
+                rows,
+            };
+            for (const x of rows) index.set(x.key, raceObj);
+        }
+    }
+    return index;
+}
+
+/** その選手の前日レース */
+function prevRaceOf(racer) {
+    return prevRaceIndex.get(racerKey(racer)) || null;
+}
+
+/** その選手の前日レースでの1行 */
+function prevRowOf(racer) {
+    const race = prevRaceOf(racer);
+    if (!race) return null;
+    const k = racerKey(racer);
+    return race.rows.find((x) => x.key === k) || null;
 }
 
 /** 脚余し判定: 前日レースで上り最速だったのに着順が振るわなかった */
 const LEG_CHAKU_MIN = 5;   // 何着以下を「振るわなかった」とみなすか
 
-function isLegLeftover(racer, ranks) {
-    const info = ranks.get(racerKey(racer));
-    if (!info || info.rank !== 1) return false;
+function isLegLeftover(racer) {
+    const row = prevRowOf(racer);
+    if (!row || row.rank !== 1) return false;
     const z = String(racer['前日着'] ?? '').trim();
     if (!/^\d+$/.test(z)) return false;
     return Number(z) >= LEG_CHAKU_MIN;
@@ -486,7 +518,7 @@ function renderPickup(data, topN, minLead, maxTie) {
                         <span class="rank-mark">${rankMark(item.rank)}</span>
                         ${carBadge(r['車番'])}
                         <span class="pickup-name">
-                            <span class="nm">${escapeHtml(r['選手名'])}</span>
+                            <button type="button" class="nm nm-link" data-rk="${escapeHtml(racerKey(r))}" title="前日に走ったレースの全着順を見る">${escapeHtml(r['選手名'])}</button>
                             <span class="meta">${escapeHtml(r['級班'] || '')} ${escapeHtml(r['脚質'] || '')}${
                                 r['競走得点'] ? ' ' + escapeHtml(r['競走得点']) : ''
                             }</span>
@@ -557,7 +589,7 @@ function renderAllRaces(data, topN) {
                         : '<span class="is-empty">—</span>';
                     return `<tr class="${isPickup ? 'is-pickup' : ''}">
                         <td class="td-car">${carBadge(r['車番'])}</td>
-                        <td class="td-name">${escapeHtml(r['選手名'])}</td>
+                        <td class="td-name"><button type="button" class="nm-link" data-rk="${escapeHtml(racerKey(r))}" title="前日に走ったレースの全着順を見る">${escapeHtml(r['選手名'])}</button></td>
                         <td>${escapeHtml(r['級班'] || '')}</td>
                         <td>${escapeHtml(r['脚質'] || '')}</td>
                         <td class="time">${escapeHtml(r['競走得点'] ?? '')}</td>
@@ -625,7 +657,7 @@ function renderAllRaces(data, topN) {
  * 脚余しセクション。前日レースで上り最速だったのに着順が振るわなかった選手を、
  * 今日どのレースに乗るかとあわせて並べる。
  */
-function renderLegLeftover(data, ranks) {
+function renderLegLeftover(data) {
     const container = document.getElementById('legContainer');
     const note = document.getElementById('legNote');
 
@@ -639,8 +671,8 @@ function renderLegLeftover(data, ranks) {
     for (const meet of data) {
         for (const race of sortedRaces(meet)) {
             for (const r of race.racers || []) {
-                if (!isLegLeftover(r, ranks)) continue;
-                const info = ranks.get(racerKey(r));
+                if (!isLegLeftover(r)) continue;
+                const info = prevRowOf(r);
                 rows.push({ meet, race, racer: r, info });
             }
         }
@@ -665,14 +697,14 @@ function renderLegLeftover(data, ranks) {
             <div class="pickup-row">
                 ${carBadge(racer['車番'])}
                 <span class="pickup-name">
-                    <span class="nm">${escapeHtml(racer['選手名'])}</span>
+                    <button type="button" class="nm nm-link" data-rk="${escapeHtml(racerKey(racer))}" title="前日に走ったレースの全着順を見る">${escapeHtml(racer['選手名'])}</button>
                     <span class="meta">${escapeHtml(racer['級班'] || '')} ${escapeHtml(racer['脚質'] || '')}${
                         racer['競走得点'] ? ' ' + escapeHtml(racer['競走得点']) : ''
                     }</span>
                 </span>
                 <span class="pickup-time">
                     <span class="t-row">
-                        <span class="t time">${fmtTime(info.t)}</span>
+                        <span class="t time">${fmtTime(info.agari)}</span>
                         ${chakuBadge(racer['前日着'], true)}
                     </span>
                     <span class="diff-chip lead" title="前日に走ったレースの中での上り順位">前日レース上り1位</span>
@@ -682,6 +714,56 @@ function renderLegLeftover(data, ranks) {
         .join('');
 
     container.innerHTML = `<div class="pickup-grid">${cards}</div>`;
+}
+
+// ===== 前日レースの内訳モーダル =====
+
+/** 着順の並べ替えキー。数値 → 落/故 → 不明 の順 */
+function chakuOrder(z) {
+    const s = String(z || '').trim();
+    if (/^\d+$/.test(s)) return Number(s);
+    if (s) return 90;      // 落・故 は最後尾のひとつ手前
+    return 99;             // 記録なし
+}
+
+/** 選手名クリックで、その選手が前日に走ったレースの全着順と上りを出す */
+function openPrevRace(rk) {
+    const race = prevRaceIndex.get(rk);
+    const modal = document.getElementById('prevModal');
+    if (!race) return;
+
+    document.getElementById('prevModalTitle').textContent =
+        `${race.place} ${race.num}R ${race.name}`;
+    document.getElementById('prevModalSub').textContent =
+        `前日（${race.raceDay}日目）のレース結果。上りは ${race.size} 人分を復元。`;
+
+    const rows = race.rows.slice().sort((a, b) => chakuOrder(a.chaku) - chakuOrder(b.chaku));
+    const body = rows.map((x) => {
+        const isSelf = x.key === rk;
+        const isBest = x.agari !== null && x.agari === race.best;
+        return `<tr class="${isSelf ? 'is-self' : ''}">
+            <td>${chakuBadge(x.chaku)}</td>
+            <td class="td-car">${carBadge(x.car)}</td>
+            <td class="td-name">${escapeHtml(x.name)}${x.pref ? ` <span class="pref">${escapeHtml(x.pref)}</span>` : ''}</td>
+            <td class="td-agari ${isBest ? 'is-best' : ''}">${
+                x.agari === null ? '<span class="is-empty">—</span>' : `<span class="time">${fmtTime(x.agari)}</span>`
+            }</td>
+            <td>${x.rank === null ? '<span class="is-empty">—</span>' : x.rank + '位'}</td>
+        </tr>`;
+    }).join('');
+
+    document.getElementById('prevModalTable').innerHTML = `
+        <thead><tr><th>着</th><th>車</th><th>選手名</th><th>上り</th><th>上り順</th></tr></thead>
+        <tbody>${body}</tbody>`;
+
+    modal.hidden = false;
+    document.body.style.overflow = 'hidden';
+    document.getElementById('prevModalClose').focus();
+}
+
+function closePrevRace() {
+    document.getElementById('prevModal').hidden = true;
+    document.body.style.overflow = '';
 }
 
 function meetHeader(meet) {
@@ -772,9 +854,9 @@ function render() {
     const minLead = currentMinLead();
     const maxTie = currentMaxTie();
     const view = filteredData();
-    const ranks = buildPrevRaceRanks(currentData, prevDayData);
+    prevRaceIndex = buildPrevRaceIndex(currentData, prevDayData);
     renderPickup(view, topN, minLead, maxTie);
-    renderLegLeftover(view, ranks);
+    renderLegLeftover(view);
     renderAllRaces(view, topN);
     updatePickupSummary(view, minLead, maxTie);
     updateTabCounts();
@@ -864,6 +946,19 @@ function init() {
     document.getElementById('minLeadSelect').addEventListener('change', render);
     document.getElementById('maxTieSelect').addEventListener('change', render);
     document.getElementById('meetSelect').addEventListener('change', render);
+    // 選手名クリック（ピックアップ・脚余し・出走表のいずれからでも）
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest('.nm-link');
+        if (link && link.dataset.rk) {
+            openPrevRace(link.dataset.rk);
+            return;
+        }
+        if (e.target.closest('[data-close]')) closePrevRace();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closePrevRace();
+    });
+
     document.getElementById('tabs').addEventListener('click', (e) => {
         const b = e.target.closest('.tab');
         if (b) switchTab(b.dataset.tab);

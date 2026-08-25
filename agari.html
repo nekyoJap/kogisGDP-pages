@@ -133,6 +133,19 @@
             </section>
         </main>
 
+        <!-- 前日レースの内訳 -->
+        <div class="modal" id="prevModal" hidden>
+            <div class="modal-backdrop" data-close></div>
+            <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="prevModalTitle">
+                <button type="button" class="modal-close" id="prevModalClose" data-close aria-label="閉じる">&times;</button>
+                <h3 id="prevModalTitle"></h3>
+                <p class="modal-sub" id="prevModalSub"></p>
+                <div class="table-wrapper">
+                    <table class="racer-table" id="prevModalTable"></table>
+                </div>
+            </div>
+        </div>
+
         <footer>
             <p>
                 <a href="index.html">予想ボード</a> |
