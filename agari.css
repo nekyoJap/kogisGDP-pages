@@ -507,6 +507,30 @@ section > h2 {
     color: #cbd5e1;
 }
 
+/* ===== 脚余し ===== */
+.leg-card {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px 14px;
+    background: var(--card-bg);
+    box-shadow: var(--shadow);
+    border-left: 4px solid var(--warning-color);
+}
+
+.leg-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.leg-card .pickup-row {
+    padding: 4px 0;
+}
+
 /* ===== タイム数直線 ===== */
 .timeline-block {
     margin: 16px 0 4px;

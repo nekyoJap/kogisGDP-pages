@@ -18,6 +18,9 @@ const dayCache = new Map();
 /** 現在描画中のデータ */
 let currentData = null;
 
+/** 前日のデータ。各選手が前日に走ったレースの顔ぶれを知るために使う */
+let prevDayData = null;
+
 /** 読み込みの世代番号。日付を続けて切り替えたとき、古い応答で上書きしないための番号 */
 let loadSeq = 0;
 
@@ -167,6 +170,78 @@ function meetsTie(ranked, maxTie) {
 /** 上位N人（同順位は全員含む） */
 function pickTop(ranked, topN) {
     return ranked.filter((x) => x.rank <= topN);
+}
+
+// ===== 前日レース内での相対評価 =====
+
+/**
+ * 選手の同一性キー。日をまたいで同じ選手を突き合わせるために使う。
+ * 同姓同名を避けるため府県と期別も含める。
+ */
+function racerKey(r) {
+    return [r['選手名'], r['府県'] || '', r['期別'] || ''].join('|');
+}
+
+/**
+ * 前日レース内での上り順位を求める。
+ *
+ * バケットは「今日の出走表＋各選手の前日上り」しか持たないので、前日レースの
+ * 顔ぶれは前日ファイルの出走表から取り、その全員の上りタイムを今日のファイルの
+ * 「前日上り」から引いて復元する。前日に同じレースを走った選手は基本的に今日も
+ * 同じ開催に出走しているため、この方法で揃う。
+ *
+ * 戻り値: Map<racerKey, {rank, size, best, t}>
+ */
+function buildPrevRaceRanks(todayData, prevData) {
+    const ranks = new Map();
+    if (!prevData) return ranks;
+
+    // 今日のファイルから「各選手の前日上り」を集める
+    const agari = new Map();
+    for (const meet of todayData) {
+        for (const race of meet.races || []) {
+            for (const r of race.racers || []) {
+                const t = parseAgari(r['前日上り']);
+                if (t !== null) agari.set(racerKey(r), t);
+            }
+        }
+    }
+
+    // 前日ファイルのレース単位で、メンバーのタイムを引いて順位づけ
+    for (const meet of prevData) {
+        for (const race of meet.races || []) {
+            const members = (race.racers || []).map(racerKey);
+            const times = members
+                .map((k) => agari.get(k))
+                .filter((t) => t !== undefined);
+            // 復元できた人数が少なすぎると順位の意味がないので除く
+            if (times.length < 4) continue;
+            const sorted = times.slice().sort((a, b) => a - b);
+            const best = sorted[0];
+            for (const k of members) {
+                const t = agari.get(k);
+                if (t === undefined) continue;
+                ranks.set(k, {
+                    rank: sorted.indexOf(t) + 1,
+                    size: sorted.length,
+                    best,
+                    t,
+                });
+            }
+        }
+    }
+    return ranks;
+}
+
+/** 脚余し判定: 前日レースで上り最速だったのに着順が振るわなかった */
+const LEG_CHAKU_MIN = 5;   // 何着以下を「振るわなかった」とみなすか
+
+function isLegLeftover(racer, ranks) {
+    const info = ranks.get(racerKey(racer));
+    if (!info || info.rank !== 1) return false;
+    const z = String(racer['前日着'] ?? '').trim();
+    if (!/^\d+$/.test(z)) return false;
+    return Number(z) >= LEG_CHAKU_MIN;
 }
 
 /** その開催に前日の上りデータがあるか */
@@ -545,6 +620,69 @@ function renderAllRaces(data, topN) {
     layoutTimelines(container);
 }
 
+/**
+ * 脚余しセクション。前日レースで上り最速だったのに着順が振るわなかった選手を、
+ * 今日どのレースに乗るかとあわせて並べる。
+ */
+function renderLegLeftover(data, ranks) {
+    const container = document.getElementById('legContainer');
+    const note = document.getElementById('legNote');
+
+    if (!prevDayData) {
+        note.textContent = '前日のデータが取得できないため、この抽出は行えません。';
+        container.innerHTML = '';
+        return;
+    }
+
+    const rows = [];
+    for (const meet of data) {
+        for (const race of sortedRaces(meet)) {
+            for (const r of race.racers || []) {
+                if (!isLegLeftover(r, ranks)) continue;
+                const info = ranks.get(racerKey(r));
+                rows.push({ meet, race, racer: r, info });
+            }
+        }
+    }
+
+    note.textContent = rows.length
+        ? `${rows.length} 人。前日レースで上り最速ながら ${LEG_CHAKU_MIN} 着以下だった選手です。`
+        : `該当なし。前日レースで上り最速ながら ${LEG_CHAKU_MIN} 着以下だった選手はいません。`;
+
+    if (rows.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    const cards = rows
+        .map(({ meet, race, racer, info }) => `<div class="leg-card">
+            <div class="leg-head">
+                <span class="pickup-race-num">${escapeHtml(race.race_num)}R</span>
+                <span class="pickup-place">${escapeHtml(meet.place)}</span>
+                <span class="pickup-race-name">${escapeHtml(race.race_name || '')}</span>
+            </div>
+            <div class="pickup-row">
+                ${carBadge(racer['車番'])}
+                <span class="pickup-name">
+                    <span class="nm">${escapeHtml(racer['選手名'])}</span>
+                    <span class="meta">${escapeHtml(racer['級班'] || '')} ${escapeHtml(racer['脚質'] || '')}${
+                        racer['競走得点'] ? ' ' + escapeHtml(racer['競走得点']) : ''
+                    }</span>
+                </span>
+                <span class="pickup-time">
+                    <span class="t-row">
+                        <span class="t time">${fmtTime(info.t)}</span>
+                        ${chakuBadge(racer['前日着'], true)}
+                    </span>
+                    <span class="diff-chip lead" title="前日に走ったレースの中での上り順位">前日レース上り1位</span>
+                </span>
+            </div>
+        </div>`)
+        .join('');
+
+    container.innerHTML = `<div class="pickup-grid">${cards}</div>`;
+}
+
 function meetHeader(meet) {
     return `<div class="meet-header">
         <span class="meet-place">${escapeHtml(meet.place)}</span>
@@ -568,6 +706,8 @@ function setStatus(msg, kind) {
 
 function clearOutput() {
     document.getElementById('pickupContainer').innerHTML = '';
+    document.getElementById('legContainer').innerHTML = '';
+    document.getElementById('legNote').textContent = '';
     document.getElementById('racesContainer').innerHTML = '';
 }
 
@@ -586,7 +726,9 @@ function render() {
     const topN = Number(document.getElementById('topNSelect').value);
     const minLead = currentMinLead();
     const maxTie = currentMaxTie();
+    const ranks = buildPrevRaceRanks(currentData, prevDayData);
     renderPickup(currentData, topN, minLead, maxTie);
+    renderLegLeftover(currentData, ranks);
     renderAllRaces(currentData, topN);
     updatePickupSummary(minLead, maxTie);
 }
@@ -626,6 +768,15 @@ async function load(requestedISO) {
         const { iso, data, backtracked } = await loadWithFallback(requestedISO);
         if (seq !== loadSeq) return; // より新しい読み込みが始まっている
         currentData = data;
+
+        // 脚余しの判定に使う前日データ。取れなくても本体の表示は続ける
+        prevDayData = null;
+        try {
+            prevDayData = await fetchDay(addDays(iso, -1));
+        } catch (e) {
+            prevDayData = null;
+        }
+        if (seq !== loadSeq) return;
         dateInput.value = iso;
 
         const withData = data.filter(meetHasData).length;
