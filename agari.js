@@ -138,42 +138,36 @@ function roundDiff(v) {
     return Math.round(v * 10) / 10;
 }
 
-/**
- * そのレースの1位が2位をどれだけ離しているか。
- * 2位がいない（全員同タイム / 有効なタイムが1人）場合は null。
- */
-function leadOfRace(ranked) {
-    if (ranked.length === 0) return null;
-    const d = ranked[0].diff;
-    return d === null || d === undefined ? null : roundDiff(d);
-}
 
-/** 1位のリードがしきい値以上か。しきい値0は絞り込みなし */
-function meetsLead(ranked, minLead) {
-    if (minLead <= 0) return ranked.length > 0;
-    const lead = leadOfRace(ranked);
-    return lead !== null && lead >= minLead;
-}
 
-/** 1位に並んでいる人数（同着なら2以上） */
-function tieCountAtTop(ranked) {
-    return ranked.filter((x) => x.rank === 1).length;
-}
+
 
 /**
- * 1位の同着人数が許容範囲か。
- * 同着が多いほど「抜けている」とは言えなくなるため、既定では3人以上を除く。
- * maxTie が 0 以下なら制限なし。
+ * ピックアップ判定。
+ *
+ * 比較対象は「今日の出走表」ではなく「その選手が前日に走ったレース」。
+ * 上りは展開に強く左右されるため、別々のレースで出たタイムを直接並べても
+ * 速さの比較にならない。前日レースの中で何位だったかで評価する。
  */
-function meetsTie(ranked, maxTie) {
-    if (maxTie <= 0) return true;
-    return tieCountAtTop(ranked) <= maxTie;
+function isPickup(racer, opts) {
+    const row = prevRowOf(racer);
+    if (!row || row.rank === null) return false;
+    if (row.rank > opts.maxRank) return false;
+    if (row.rank !== 1) return true;   // 2位以下は順位の条件だけで採る
+    const race = prevRaceOf(racer);
+    if (opts.maxTie > 0 && race.tieAtTop > opts.maxTie) return false;
+    if (opts.minLead > 0 && (race.lead === null || race.lead < opts.minLead - 1e-9)) return false;
+    return true;
 }
 
-/** 上位N人（同順位は全員含む） */
-function pickTop(ranked, topN) {
-    return ranked.filter((x) => x.rank <= topN);
+/** 今日のレースからピックアップ対象を取り出す。前日レースの上り順位が良い順 */
+function pickupOf(race, opts) {
+    return (race.racers || [])
+        .filter((r) => isPickup(r, opts))
+        .map((r) => ({ racer: r, row: prevRowOf(r), prev: prevRaceOf(r) }))
+        .sort((a, b) => a.row.rank - b.row.rank || a.row.agari - b.row.agari);
 }
+
 
 // ===== 前日レース内での相対評価 =====
 
@@ -236,6 +230,8 @@ function buildPrevRaceIndex(todayData, prevData) {
             rows.forEach((x) => {
                 if (x.agari !== null) x.rank = sorted.indexOf(x.agari) + 1;
             });
+            const best = sorted[0];
+            const second = sorted.find((t) => t > best);
             const raceObj = {
                 place: meet.place,
                 grade: meet.grade || '',
@@ -243,7 +239,10 @@ function buildPrevRaceIndex(todayData, prevData) {
                 num: race.race_num,
                 name: race.race_name || '',
                 size: sorted.length,
-                best: sorted[0],
+                best,
+                // そのレースで1位が2位をどれだけ離したか。全員同着なら null
+                lead: second === undefined ? null : roundDiff(second - best),
+                tieAtTop: sorted.filter((t) => t === best).length,
                 rows,
             };
             for (const x of rows) index.set(x.key, raceObj);
@@ -351,12 +350,6 @@ function carBadge(num) {
     return `<span class="car-badge ${cls}">${escapeHtml(num)}</span>`;
 }
 
-/** カード見出しに出す「1位が2位を離した差」 */
-function leadChip(ranked) {
-    const lead = leadOfRace(ranked);
-    if (lead === null) return '';
-    return `<span class="lead-chip" title="1位が2位を離した差">リード <span class="time">${lead.toFixed(1)}</span></span>`;
-}
 
 /**
  * 着順バッジ。上りタイムと同じ1走の着順を表す。
@@ -377,11 +370,6 @@ function chakuBadge(raw, withLabel) {
     return `<span class="chaku chaku-x" title="${t}">${lb}${escapeHtml(CHAKU_LABELS[s] || s)}</span>`;
 }
 
-const RANK_MARKS = { 1: '1st', 2: '2nd', 3: '3rd' };
-
-function rankMark(rank) {
-    return RANK_MARKS[rank] || `${rank}th`;
-}
 
 // ===== タイム数直線 =====
 
@@ -481,8 +469,19 @@ function layoutTimelines(root) {
 
 // ===== セクション描画 =====
 
-function renderPickup(data, topN, minLead, maxTie) {
+function renderPickup(data, opts) {
     const container = document.getElementById('pickupContainer');
+
+    // 判定は前日レースとの比較で行うため、前日ファイルが無いと成立しない
+    if (!prevDayData) {
+        container.innerHTML = `<div class="no-data">
+            <strong>前日のデータが取得できません</strong>
+            ピックアップは各選手が前日に走ったレースとの比較で判定するため、
+            前日のデータが必要です。「全レース」タブでは当日の出走表と上りタイムを確認できます。
+        </div>`;
+        return;
+    }
+
     const parts = [];
 
     for (const meet of data) {
@@ -505,17 +504,17 @@ function renderPickup(data, topN, minLead, maxTie) {
 
         const cards = [];
         for (const race of sortedRaces(meet)) {
-            const ranked = rankRacers(race.racers || []);
-            if (ranked.length === 0) continue;
-            if (!meetsLead(ranked, minLead)) continue;
-            if (!meetsTie(ranked, maxTie)) continue;
-            const picked = pickTop(ranked, topN);
+            const picked = pickupOf(race, opts);
+            if (picked.length === 0) continue;
 
             const rows = picked
-                .map((item) => {
-                    const r = item.racer;
-                    return `<div class="pickup-row rank-${item.rank}">
-                        <span class="rank-mark">${rankMark(item.rank)}</span>
+                .map(({ racer: r, row, prev }) => {
+                    const tie = row.rank === 1 && prev.tieAtTop > 1
+                        ? `<span class="tie-mini">同着${prev.tieAtTop}</span>` : '';
+                    const lead = row.rank === 1 && prev.lead !== null
+                        ? `<span class="row-lead" title="前日レースで2位を離した差">2位に ${prev.lead.toFixed(1)}</span>` : '';
+                    return `<div class="pickup-row rank-${row.rank}">
+                        <span class="rank-mark" title="前日に走ったレースでの上り順位">上り${row.rank}位${tie}</span>
                         ${carBadge(r['車番'])}
                         <span class="pickup-name">
                             <button type="button" class="nm nm-link" data-rk="${escapeHtml(racerKey(r))}" title="前日に走ったレースの全着順を見る">${escapeHtml(r['選手名'])}</button>
@@ -525,22 +524,21 @@ function renderPickup(data, topN, minLead, maxTie) {
                         </span>
                         <span class="pickup-time">
                             <span class="t-row">
-                                <span class="t time">${fmtTime(item.t)}</span>
+                                <span class="t time">${fmtTime(row.agari)}</span>
                                 ${chakuBadge(r['前日着'], true)}
                             </span>
+                            ${lead}
                         </span>
                     </div>`;
                 })
                 .join('');
 
-            const tied = tieCountAtTop(ranked);
             cards.push(`<div class="pickup-card">
                 <div class="pickup-card-head">
                     <span class="pickup-race-num">${escapeHtml(race.race_num)}R</span>
                     <span class="pickup-place">${escapeHtml(meet.place)}</span>
                     <span class="pickup-race-name">${escapeHtml(race.race_name || '')}</span>
-                    ${leadChip(ranked)}
-                    ${tied > 1 ? `<span class="tie-note" title="1位が同着のため単独で抜けた選手はいません">同着${tied}人</span>` : ''}
+
                 </div>
                 ${rows}
             </div>`);
@@ -551,7 +549,7 @@ function renderPickup(data, topN, minLead, maxTie) {
             <div class="meet-body">
                 ${cards.length
                     ? `<div class="pickup-grid">${cards.join('')}</div>`
-                    : `<div class="no-data"><strong>該当レースなし</strong>条件（1位のリード <span class="time">${minLead.toFixed(1)}</span> 秒以上${maxTie > 0 ? `／1位の同着 ${maxTie} 人まで` : ''}）に合うレースはありません。</div>`}
+                    : `<div class="no-data"><strong>該当レースなし</strong>条件に合う選手がいません。</div>`}
             </div>
         </div>`);
     }
@@ -559,7 +557,7 @@ function renderPickup(data, topN, minLead, maxTie) {
     container.innerHTML = parts.join('');
 }
 
-function renderAllRaces(data, topN) {
+function renderAllRaces(data, opts) {
     const container = document.getElementById('racesContainer');
     const parts = [];
 
@@ -570,8 +568,8 @@ function renderAllRaces(data, topN) {
         for (const race of sortedRaces(meet)) {
             const racers = race.racers || [];
             const ranked = rankRacers(racers);
-            const picked = pickTop(ranked, topN);
-            const pickedSet = new Set(picked.map((x) => x.racer['車番']));
+            // 強調はピックアップと同じ基準（前日レースでの上り順位）で行う
+            const pickedSet = new Set(pickupOf(race, opts).map((x) => x.racer['車番']));
             const rankByCar = new Map(ranked.map((x) => [x.racer['車番'], x]));
 
             const body = ranked.length > 0
@@ -850,15 +848,17 @@ function currentMaxTie() {
 
 function render() {
     if (!currentData) return;
-    const topN = Number(document.getElementById('topNSelect').value);
-    const minLead = currentMinLead();
-    const maxTie = currentMaxTie();
+    const opts = {
+        maxRank: Number(document.getElementById('topNSelect').value),
+        minLead: currentMinLead(),
+        maxTie: currentMaxTie(),
+    };
     const view = filteredData();
     prevRaceIndex = buildPrevRaceIndex(currentData, prevDayData);
-    renderPickup(view, topN, minLead, maxTie);
+    renderPickup(view, opts);
     renderLegLeftover(view);
-    renderAllRaces(view, topN);
-    updatePickupSummary(view, minLead, maxTie);
+    renderAllRaces(view, opts);
+    updatePickupSummary(view, opts);
     updateTabCounts();
     // 非表示のまま描画された数直線は幅0で組まれるため、表示中のタブだけ組み直す
     if (activeTab() === 'races') {
@@ -867,26 +867,29 @@ function render() {
 }
 
 /** ピックアップ見出しの横に、絞り込み結果の件数を出す */
-function updatePickupSummary(data, minLead, maxTie) {
+function updatePickupSummary(data, opts) {
     const el = document.getElementById('pickupSummary');
     if (!el || !data) return;
+    if (!prevDayData) {
+        el.textContent = '前日のデータが取得できないため、前日レースとの比較ができません。';
+        return;
+    }
     let total = 0;
     let hit = 0;
+    let riders = 0;
     for (const meet of data) {
         if (!meetHasData(meet)) continue;
         for (const race of meet.races || []) {
-            const ranked = rankRacers(race.racers || []);
-            if (ranked.length === 0) continue;
+            if (rankRacers(race.racers || []).length === 0) continue;
             total++;
-            if (meetsLead(ranked, minLead) && meetsTie(ranked, maxTie)) hit++;
+            const n = pickupOf(race, opts).length;
+            if (n > 0) { hit++; riders += n; }
         }
     }
-    const conds = [];
-    if (minLead > 0) conds.push(`1位のリード ${minLead.toFixed(1)} 秒以上`);
-    if (maxTie > 0) conds.push(maxTie === 1 ? '単独1位のみ' : `1位の同着 ${maxTie} 人まで`);
-    el.textContent = conds.length
-        ? `${total} レース中 ${hit} レースが該当（${conds.join('／')}）`
-        : `${total} レース（絞り込みなし）`;
+    const conds = [`前日レース上り${opts.maxRank}位まで`];
+    if (opts.minLead > 0) conds.push(`1位は2位に ${opts.minLead.toFixed(1)} 秒以上`);
+    if (opts.maxTie > 0) conds.push(opts.maxTie === 1 ? '単独1位のみ' : `1位の同着 ${opts.maxTie} 人まで`);
+    el.textContent = `${total} レース中 ${hit} レースで ${riders} 人が該当（${conds.join('／')}）`;
 }
 
 async function load(requestedISO) {

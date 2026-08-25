@@ -37,21 +37,21 @@
                         </div>
                     </div>
                     <div class="control-group">
-                        <label for="topNSelect">ピックアップ人数</label>
+                        <label for="topNSelect">前日レース上り順位</label>
                         <select id="topNSelect">
-                            <option value="1">上位1人</option>
-                            <option value="2" selected>上位2人</option>
-                            <option value="3">上位3人</option>
+                            <option value="1" selected>1位のみ</option>
+                            <option value="2">2位まで</option>
+                            <option value="3">3位まで</option>
                         </select>
                     </div>
                     <div class="control-group">
                         <label for="minLeadSelect">1位のリード</label>
                         <select id="minLeadSelect">
                             <option value="0">絞り込みなし</option>
-                            <option value="0.2">0.2秒以上</option>
-                            <option value="0.3" selected>0.3秒以上</option>
+                            <option value="0.1">0.1秒以上</option>
+                            <option value="0.2" selected>0.2秒以上</option>
+                            <option value="0.3">0.3秒以上</option>
                             <option value="0.4">0.4秒以上</option>
-                            <option value="0.5">0.5秒以上</option>
                         </select>
                     </div>
                     <div class="control-group">
@@ -93,8 +93,9 @@
             <section class="pickup-section tab-panel" data-panel="pickup">
                 <p class="section-note" id="pickupSummary"></p>
                 <p class="section-caution">
-                    上りタイムと着順は<strong>選手ごとに別のレース</strong>（各自が前日に走ったレース）の結果です。
-                    同じカード内で着順が揃うことがありますが、別レースなので偶然です。
+                    <strong>その選手が前日に走ったレースの中で</strong>上りが速かった選手を出しています。
+                    上りは展開に左右されるため、別レースのタイムを直接比べても速さの比較になりません。
+                    選手名を押すと前日レースの全着順を確認できます。
                 </p>
                 <div id="pickupContainer"></div>
             </section>
@@ -121,9 +122,9 @@
                     <strong>前日上り</strong>と<strong>前日着</strong>は、その選手が前日に走ったレースの結果です。<strong>どちらも同じ1走</strong>のもの。<br>
                     ただし<strong>前日のレースは選手ごとに別</strong>です。同じレースに出る選手でも、前日は別々のレースを走っています。<br>
                     上りとはゴール前 200m のタイム（秒）で、<strong>小さいほど速い</strong>。<br>
-                    ピックアップは<strong>1位が2位を離した差</strong>で絞り込みます。差が小さいレースは
-                    「抜けている」とは言えないため既定で 0.3 秒以上のみ表示します。<br>
-                    1位が同着の場合は単独で抜けた選手がいないため、既定で同着3人以上のレースを除外します。<br>
+ピックアップの基準は<strong>その選手が前日に走ったレースでの上り順位</strong>です。
+                    別々のレースのタイムを並べても展開差を測るだけなので、同じレースを走った選手同士で比べます。<br>
+                    「1位のリード」は<strong>前日レースで2位を離した差</strong>。同一レース内の差なので値は小さめになります。<br>
                     タイム数直線は各レースの上りタイムを横軸に並べたもの。左が速く、右が遅い。<br>
                     着順の 落＝落車、故＝故障。この2つは上りタイムの記録なし扱い。<br>
                     初日（1日目）の開催は前日の成績が存在しないため対象外。<br>
