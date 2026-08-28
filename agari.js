@@ -172,16 +172,17 @@ function pickupOf(race, opts) {
  * ピックアップ対象を選手単位で集める。
  *
  * 見たいのは「前日に良かった選手を今日どこで狙うか」なので、今日のレース単位
- * ではなく選手単位に並べる。順番は前日レースでの上り順位が先で、同じ順位の中は
- * 1位ならリードの大きい順、2位以下は1位との差が小さい順。
+ * ではなく選手単位のカードにする。並びは今日のレース番号順。買う順に上から
+ * 見ていけるようにするため。同じレースに複数いる場合は前日レースでの上り順位
+ * が良い順。
  */
 function pickupRiders(data, opts) {
     const out = [];
     for (const meet of data) out.push(...pickupRidersOfMeet(meet, opts));
-    return sortPickupRiders(out);
+    return out;
 }
 
-/** 1開催ぶんのピックアップ対象。表示は開催ごとにまとめるのでこちらを使う */
+/** 1開催ぶんのピックアップ対象。レース番号順。表示は開催ごとにまとめる */
 function pickupRidersOfMeet(meet, opts) {
     if (!meetHasData(meet)) return [];
     const out = [];
@@ -190,21 +191,7 @@ function pickupRidersOfMeet(meet, opts) {
             out.push({ meet, race, racer: hit.racer, row: hit.row, prev: hit.prev });
         }
     }
-    return sortPickupRiders(out);
-}
-
-/** 前日レースでの強さ順。1位はリードの大きい順、2位以下は1位との差が小さい順 */
-function sortPickupRiders(list) {
-    const leadOf = (x) => (x.prev.lead === null ? 0 : x.prev.lead);
-    // 2位以下は前日レースの1位との差。同じレース内の差なので選手間で比べられる
-    const gapOf = (x) => roundDiff(x.row.agari - x.prev.best);
-
-    return list.sort((a, b) =>
-        a.row.rank - b.row.rank ||
-        (a.row.rank === 1 ? leadOf(b) - leadOf(a) : gapOf(a) - gapOf(b)) ||
-        Number(a.race.race_num) - Number(b.race.race_num) ||
-        String(a.meet.place).localeCompare(String(b.meet.place), 'ja')
-    );
+    return out;
 }
 
 
