@@ -177,35 +177,34 @@ function pickupOf(race, opts) {
  */
 function pickupRiders(data, opts) {
     const out = [];
-    for (const meet of data) {
-        if (!meetHasData(meet)) continue;
-        for (const race of sortedRaces(meet)) {
-            for (const hit of pickupOf(race, opts)) {
-                out.push({ meet, race, racer: hit.racer, row: hit.row, prev: hit.prev });
-            }
+    for (const meet of data) out.push(...pickupRidersOfMeet(meet, opts));
+    return sortPickupRiders(out);
+}
+
+/** 1開催ぶんのピックアップ対象。表示は開催ごとにまとめるのでこちらを使う */
+function pickupRidersOfMeet(meet, opts) {
+    if (!meetHasData(meet)) return [];
+    const out = [];
+    for (const race of sortedRaces(meet)) {
+        for (const hit of pickupOf(race, opts)) {
+            out.push({ meet, race, racer: hit.racer, row: hit.row, prev: hit.prev });
         }
     }
+    return sortPickupRiders(out);
+}
 
+/** 前日レースでの強さ順。1位はリードの大きい順、2位以下は1位との差が小さい順 */
+function sortPickupRiders(list) {
     const leadOf = (x) => (x.prev.lead === null ? 0 : x.prev.lead);
     // 2位以下は前日レースの1位との差。同じレース内の差なので選手間で比べられる
     const gapOf = (x) => roundDiff(x.row.agari - x.prev.best);
 
-    out.sort((a, b) =>
+    return list.sort((a, b) =>
         a.row.rank - b.row.rank ||
         (a.row.rank === 1 ? leadOf(b) - leadOf(a) : gapOf(a) - gapOf(b)) ||
         Number(a.race.race_num) - Number(b.race.race_num) ||
         String(a.meet.place).localeCompare(String(b.meet.place), 'ja')
     );
-    return out;
-}
-
-/** 前日の上りが無くて対象外になった開催を、リストの末尾に控えめに出す */
-function skippedMeetNote(meets) {
-    if (meets.length === 0) return '';
-    const items = meets
-        .map((m) => escapeHtml(m.place) + (Number(m.race_day) === 1 ? '（初日）' : ''))
-        .join('・');
-    return `<p class="section-note skipped-meets">前日の上りが無いため対象外：${items}</p>`;
 }
 
 
@@ -527,52 +526,71 @@ function renderPickup(data, opts) {
         return;
     }
 
-    const riders = pickupRiders(data, opts);
-    const skipped = skippedMeetNote(data.filter((m) => !meetHasData(m)));
+    const parts = [];
 
-    if (riders.length === 0) {
-        container.innerHTML = `<div class="no-data">
-            <strong>該当する選手がいません</strong>
-            条件をゆるめると広がります（上り順位を2位までにする、リードの絞り込みを外す）。
-        </div>` + skipped;
-        return;
+    for (const meet of data) {
+        const head = meetHeader(meet);
+
+        if (!meetHasData(meet)) {
+            parts.push(`<div class="meet">
+                ${head}
+                <div class="meet-body">
+                    <div class="no-data">
+                        <strong>前日の上りデータなし</strong>
+                        ${Number(meet.race_day) === 1
+                            ? '初日（1日目）のため前日の成績がありません。'
+                            : '前日の上りが記録されている選手がいません。'}
+                    </div>
+                </div>
+            </div>`);
+            continue;
+        }
+
+        const cards = pickupRidersOfMeet(meet, opts).map(pickupCard).join('');
+
+        parts.push(`<div class="meet">
+            ${head}
+            <div class="meet-body">
+                ${cards
+                    ? `<div class="pickup-grid">${cards}</div>`
+                    : `<div class="no-data"><strong>該当選手なし</strong>条件に合う選手がいません。</div>`}
+            </div>
+        </div>`);
     }
 
-    const cards = riders
-        .map(({ meet, race, racer: r, row, prev }) => {
-            const tie = row.rank === 1 && prev.tieAtTop > 1
-                ? `<span class="tie-mini">同着${prev.tieAtTop}</span>` : '';
-            const lead = row.rank === 1 && prev.lead !== null
-                ? `<span class="row-lead" title="前日レースで2位を離した差">2位に ${prev.lead.toFixed(1)}</span>` : '';
-            return `<div class="pickup-card pu-card">
-                <div class="pickup-row rank-${row.rank}">
-                    <span class="rank-mark" title="前日に走ったレースでの上り順位">上り${row.rank}位${tie}</span>
-                    <span class="pickup-name">
-                        <button type="button" class="nm nm-link" data-rk="${escapeHtml(racerKey(r))}" title="前日に走ったレースの全着順を見る">${escapeHtml(r['選手名'])}</button>
-                        <span class="meta">${escapeHtml(r['級班'] || '')} ${escapeHtml(r['脚質'] || '')}${
-                            r['競走得点'] ? ' ' + escapeHtml(r['競走得点']) : ''
-                        }</span>
-                    </span>
-                    <span class="pickup-time">
-                        <span class="t-row">
-                            <span class="t time">${fmtTime(row.agari)}</span>
-                            ${chakuBadge(r['前日着'], true)}
-                        </span>
-                        ${lead}
-                    </span>
-                </div>
-                <div class="pu-today">
-                    <span class="pu-today-label">本日</span>
-                    ${carBadge(r['車番'])}
-                    <span class="pickup-place">${escapeHtml(meet.place)}</span>
-                    <span class="pickup-race-num">${escapeHtml(race.race_num)}R</span>
-                    <span class="pickup-race-name">${escapeHtml(race.race_name || '')}</span>
-                </div>
-            </div>`;
-        })
-        .join('');
+    container.innerHTML = parts.join('');
+}
 
-    container.innerHTML = `<div class="pickup-grid">${cards}</div>` + skipped;
+/** ピックアップ1人ぶんのカード。前日の内容を上に、今日どこに乗るかを下に置く */
+function pickupCard({ race, racer: r, row, prev }) {
+    const tie = row.rank === 1 && prev.tieAtTop > 1
+        ? `<span class="tie-mini">同着${prev.tieAtTop}</span>` : '';
+    const lead = row.rank === 1 && prev.lead !== null
+        ? `<span class="row-lead" title="前日レースで2位を離した差">2位に ${prev.lead.toFixed(1)}</span>` : '';
+    return `<div class="pickup-card pu-card">
+        <div class="pickup-row rank-${row.rank}">
+            <span class="rank-mark" title="前日に走ったレースでの上り順位">上り${row.rank}位${tie}</span>
+            <span class="pickup-name">
+                <button type="button" class="nm nm-link" data-rk="${escapeHtml(racerKey(r))}" title="前日に走ったレースの全着順を見る">${escapeHtml(r['選手名'])}</button>
+                <span class="meta">${escapeHtml(r['級班'] || '')} ${escapeHtml(r['脚質'] || '')}${
+                    r['競走得点'] ? ' ' + escapeHtml(r['競走得点']) : ''
+                }</span>
+            </span>
+            <span class="pickup-time">
+                <span class="t-row">
+                    <span class="t time">${fmtTime(row.agari)}</span>
+                    ${chakuBadge(r['前日着'], true)}
+                </span>
+                ${lead}
+            </span>
+        </div>
+        <div class="pu-today">
+            <span class="pu-today-label">本日</span>
+            ${carBadge(r['車番'])}
+            <span class="pickup-race-num">${escapeHtml(race.race_num)}R</span>
+            <span class="pickup-race-name">${escapeHtml(race.race_name || '')}</span>
+        </div>
+    </div>`;
 }
 
 function renderAllRaces(data, opts) {

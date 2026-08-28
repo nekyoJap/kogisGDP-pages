@@ -652,10 +652,6 @@ section > h2 {
     margin-left: auto;
 }
 
-.skipped-meets {
-    margin-top: 16px;
-}
-
 /* ===== 脚余し ===== */
 .leg-card {
     border: 1px solid var(--border-color);
